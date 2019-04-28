@@ -1,0 +1,19 @@
+{
+  "name": "electric_lemur",
+  "version": "3.0.0",
+  "description": "",
+  "main": "bootstrap_staging.js",
+  "dependencies": {
+    "do-wrapper": "^3.20.0",
+    "parse-domain": "^2.1.7",
+    "yaml": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^11.13.8"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
