@@ -1,127 +1,12 @@
 #!/usr/bin/env node
+import { DORunner } from './do_runner';
 
 import * as fs from 'fs';
-import * as child from 'child_process';
 
 import * as _parseDomain from 'parse-domain';
 
 const yaml = require('yaml');
 const DigitalOcean = require('do-wrapper').default;
-
-class Runner {
-  static MakeRunner(): Promise<Runner> {
-    return Promise.resolve(new Runner('/home/willia4/bin/doctl'));
-  }
-
-  private _cmd: string = undefined;
-  private _args: string[] = [];
-
-  private constructor(cmd) {
-    this._cmd = cmd;
-  }
-
-  public arg(newArg: string) {
-    this._argStringToArray(newArg).forEach(a => { this._args.push(a); });
-    return this;
-  }
-
-  public exec(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let fullCommand = this._cmd;
-
-      let p = child.spawn(fullCommand, this._args);
-      let stdErr = '';
-      let stdOut = '';
-
-      p.stderr.on('data', (data: Buffer) => { stdErr += data.toString(); });
-      p.stdout.on('data', (data: Buffer) => { stdOut += data.toString(); });
-
-      p.on('error', (err) => {
-        stdErr += err.message;
-        reject(err);
-        return;
-      });
-
-      p.on('exit', (code) => {
-        if (code === 0) { 
-          resolve(stdOut);
-        }
-        else {
-          reject(stdErr);
-        }
-        return;
-      });
-
-      p.on('close', (code) => {
-        if (code === 0) { 
-          resolve(stdOut);
-        }
-        else {
-          reject(stdErr);
-        }
-        return;
-      });
-    });
-  }
-
-  private _argStringToArray(argString: string): string[] {
-    var args = [];
-
-    var inQuotes = false;
-    var escaped = false;
-    var arg = '';
-
-    var append = function (c: any) {
-        // we only escape double quotes.
-        if (escaped && c !== '"') {
-            arg += '\\';
-        }
-
-        arg += c;
-        escaped = false;
-    }
-
-    for (var i = 0; i < argString.length; i++) {
-        var c = argString.charAt(i);
-
-        if (c === '"') {
-            if (!escaped) {
-                inQuotes = !inQuotes;
-            }
-            else {
-                append(c);
-            }
-            continue;
-        }
-
-        if (c === "\\" && escaped) {
-            append(c);
-            continue;
-        }
-
-        if (c === "\\" && inQuotes) {
-            escaped = true;
-            continue;
-        }
-
-        if (c === ' ' && !inQuotes) {
-            if (arg.length > 0) {
-                args.push(arg);
-                arg = '';
-            }
-            continue;
-        }
-
-        append(c);
-    }
-
-    if (arg.length > 0) {
-        args.push(arg.trim());
-    }
-
-    return args;
-}
-}
 
 interface Droplet {
   id: number,
@@ -188,7 +73,7 @@ function ipForDroplet(droplet: Droplet): string {
 }
 
 function getDroplets(): Promise<Droplet[]> {
-  return Runner.MakeRunner()
+  return DORunner.MakeRunner()
     .then((runner) => {
       return runner
           .arg('compute droplet list')
@@ -211,7 +96,7 @@ function getDroplet(name: string): Promise<Droplet> {
 }
 
 function createDroplet(name: string): Promise<Droplet> {
-  return Runner.MakeRunner()
+  return DORunner.MakeRunner()
     .then((runner) => {
       return runner
         .arg(`compute droplet create ${name}`)
@@ -234,7 +119,7 @@ function getDNSRecordsInZone(zone: string): Promise<DNSRecord[]> {
   return Promise.resolve()
     .then(() => {
       if ( cached_dns_records.has(zone) ) { return Promise.resolve(); }
-      return Runner.MakeRunner()
+      return DORunner.MakeRunner()
         .then((runner) => {
           return runner
               .arg(`compute domain records list ${zone}`)
@@ -271,7 +156,7 @@ function createOrUpdateDNSARecord(fqdn: string, ipAddress: string): Promise<DNSR
   function _createDNSARecord(zone: string, recordName: string, ipAddress: string): Promise<DNSRecord> {
     if (!recordName) { throw `Cannot create new A record for ${zone} zone. Create this in the portal.`}
 
-    return Runner.MakeRunner()
+    return DORunner.MakeRunner()
       .then(runner => {
         return runner
           .arg(`compute domain records create ${zone}`)
@@ -288,7 +173,7 @@ function createOrUpdateDNSARecord(fqdn: string, ipAddress: string): Promise<DNSR
   }
 
   function _updateDNSARecord(recordId: number, zone: string, ipAddress: string): Promise<DNSRecord> {
-    return Runner.MakeRunner()
+    return DORunner.MakeRunner()
       .then(runner => {
         return runner
           .arg(`compute domain records update ${zone}`)
