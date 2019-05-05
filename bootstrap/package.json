@@ -5,11 +5,17 @@
   "main": "bootstrap_staging.js",
   "dependencies": {
     "do-wrapper": "^3.20.0",
+    "inquirer": "^6.3.1",
     "parse-domain": "^2.1.7",
-    "yaml": "^1.5.0"
+    "yaml": "^1.5.0",
+    "yargs": "^13.2.2"
   },
   "devDependencies": {
-    "@types/node": "^11.13.8"
+    "@types/inquirer": "^6.0.1",
+    "@types/jquery": "^3.3.29",
+    "@types/jqueryui": "^1.12.7",
+    "@types/node": "^11.13.8",
+    "@types/yargs": "^13.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
