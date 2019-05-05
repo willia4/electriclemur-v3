@@ -56,6 +56,12 @@ function handleList(args: {environment: string}): Promise<void> {
   let sshKeyMount: string = undefined;
   let sshUserMount: string = undefined; 
 
+  let branHeatherbyComVolumeId: string = undefined; 
+  let mydwynterComVolumeId: string = undefined; 
+  let mydwynterStudiosComVolumeId: string = undefined;
+  let mydwynterTeaComVolumeId: string = undefined;
+  let crowglassDesignComVolumeId: string = undefined;
+
   return def.getEnvironmentDefinition(args.environment)
     .then((definition) => {
       environmentDefinition = definition;
@@ -76,6 +82,32 @@ function handleList(args: {environment: string}): Promise<void> {
       sshUserMount = volume.Mountpoint;
     })
 
+    .then(() => vol.getOrCreateVolume('branHeatherbyComVolumeId'))
+    .then((volume) => {
+      branHeatherbyComVolumeId = volume.Name;
+    })
+
+    .then(() => vol.getOrCreateVolume('mydwynterComVolumeId'))
+    .then((volume) => {
+      mydwynterComVolumeId = volume.Name;
+    })
+
+    .then(() => vol.getOrCreateVolume('mydwynterStudiosComVolumeId'))
+    .then((volume) => {
+      mydwynterStudiosComVolumeId = volume.Name;
+    })
+    
+    .then(() => vol.getOrCreateVolume('mydwynterTeaComVolumeId'))
+    .then((volume) => {
+      mydwynterTeaComVolumeId = volume.Name;
+    })
+
+    .then(() => vol.getOrCreateVolume('crowglassDesignComVolumeId'))
+    .then((volume) => {
+      crowglassDesignComVolumeId = volume.Name;
+    })
+
+
     .then(() => {
       let output: IListOutput = {
         "lemur": {
@@ -90,7 +122,12 @@ function handleList(args: {environment: string}): Promise<void> {
 
             "database_path": databaseMount,
             "ssh_key_mount": sshKeyMount,
-            "ssh_user_mount": sshUserMount
+            "ssh_user_mount": sshUserMount,
+            "branheatherbycom_volume_id": branHeatherbyComVolumeId,
+            "mydwyntercom_volume_id": mydwynterComVolumeId,
+            "mydwynterstudioscom_volume_id": mydwynterStudiosComVolumeId,
+            "mydwynterteacom_volume_id": mydwynterTeaComVolumeId,
+            "crowglassdesigncom_volume_id": crowglassDesignComVolumeId
           },
           children: []
         }

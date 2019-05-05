@@ -50,3 +50,29 @@
       dest: "{{ ssh_user_mount }}/"
     with_items: 
       - authorized_keys
+
+
+  ############ branheatherby.com volume 
+
+  - name: Restore branheatherby.com volume files from backup
+    shell: "docker run --rm -v '{{ branheatherbycom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/branheatherby.com' /v"
+    
+  ############ mydwynter.com volume 
+
+  - name: Restore mydwynter.com volume files from backup
+    shell: "docker run --rm -v '{{ mydwyntercom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynter.com' /v"
+
+  ############ mydwynterstudios.com volume 
+
+  - name: Restore mydwynterstudios.com volume files from backup
+    shell: "docker run --rm -v '{{ mydwynterstudioscom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynterstudios.com' /v"
+    
+  ############ mydwyntertea.com volume 
+
+  - name: Restore mydwyntertea.com volume files from backup
+    shell: "docker run --rm -v '{{ mydwynterteacom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwyntertea.com' /v"
+
+  ############ crowglassdesign.com volume 
+
+  - name: Restore crowglassdesign.com volume files from backup
+    shell: "docker run --rm -v '{{ crowglassdesigncom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"
