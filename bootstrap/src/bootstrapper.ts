@@ -2,17 +2,12 @@
 import { DORunner } from './do_runner';
 import * as yargs from 'yargs';
 import * as fs from 'fs';
-import * as path from 'path';
+
 import * as _parseDomain from 'parse-domain';
 import * as inquirer from 'inquirer';
+import * as def from './environment_definition';
 
 const yaml = require('yaml');
-
-interface IEnvironmentDefinition {
-  environmentName: string,
-  dropletName: string,
-  domainNames: string[]
-}
 
 interface Droplet {
   id: number,
@@ -239,23 +234,6 @@ function deleteDnsRecord(record: DNSRecord): Promise<void> {
     .then(() => {});
 }
 
-function getEnvironmentDefinition(environmentName: string): Promise<IEnvironmentDefinition> {
-  return (new Promise<string>((resolve ,reject) => {
-    const definitionPath =  path.normalize(path.join(path.normalize(__dirname), `../${environmentName}.json`));
-
-    fs.readFile(definitionPath, { encoding: "utf8" }, (err, contents) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(contents);
-      return;
-    });
-  }))
-  .then((contents) => JSON.parse(contents) as IEnvironmentDefinition);
-
-}
-
 function processArgs() {
   return yargs
     .command('create <environmentName>', 'create an environment', (yargs) => {
@@ -281,9 +259,9 @@ function processArgs() {
 
 function handleCreate(args: {environmentName: string}): Promise<any> {
 
-  let definition: IEnvironmentDefinition = undefined;
+  let definition: def.IEnvironmentDefinition = undefined;
 
-  return getEnvironmentDefinition(args.environmentName)
+  return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
       console.error(`Could not read definition file: `, err.message);
       process.exit(1);
@@ -348,9 +326,9 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
 
 function handleDelete(args: {environmentName: string}): Promise<any> {
   let deleteActions: (() => Promise<any>)[] = [];
-  let definition: IEnvironmentDefinition = undefined;
+  let definition: def.IEnvironmentDefinition = undefined;
 
-  return getEnvironmentDefinition(args.environmentName)
+  return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
       console.error(`Could not read definition file: `, err.message);
       process.exit(1);

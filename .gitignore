@@ -1,5 +1,7 @@
 node_modules
 dist
 
+bootstrap/ansible/*.retry
+
 secrets/*
 !secrets/readme.md
