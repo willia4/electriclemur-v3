@@ -124,6 +124,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
     .then(() => createDockerCerts(definition))
     .then(() => AnsibleRunner.RunPlaybook(definition, "configure-docker-certs"))
+    .then(() => AnsibleRunner.RunPlaybook(definition, "upload-files"))
     .catch((err) => {
       console.error(`Error:`)
       console.error(err);
