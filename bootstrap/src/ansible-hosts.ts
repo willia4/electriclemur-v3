@@ -157,10 +157,10 @@ function handleList(args: {environment: string, noVolumes: boolean}): Promise<vo
     .then(() => {
       let output: IListOutput = {
         "lemur": {
-          hosts: [ environmentDefinition.domainNames[0] ],
+          hosts: [ environmentDefinition.fqdn ],
           vars: {
             "ansible_user": "root",
-            "fqdn": environmentDefinition.domainNames[0],
+            "fqdn": environmentDefinition.fqdn,
 
             "secretsPath": environmentSecretsPath,
 
