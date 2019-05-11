@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import {DropletManager, IDroplet } from './manager.droplet';
+
 import { DORunner } from './do_runner';
 import * as yargs from 'yargs';
 import * as fs from 'fs';
@@ -9,32 +11,7 @@ import * as def from './environment_definition';
 
 const yaml = require('yaml');
 
-interface Droplet {
-  id: number,
-  name: string,
-  memory: number,
-  vcpus: number,
-  disk: number,
-  size_slug: string,
-  region: { 
-    slug: string,
-    name: string
-  },
-  image: {
-    id: number,
-    name: string,
-    distribution: string
-  },
-  networks: {
-    v4: [
-      {
-        ip_address: string,
-        type: string
-      }
-    ]
-  },
-  created_at: string
-}
+
 
 interface ParsedDomain {
   subdomain: string,
@@ -68,66 +45,15 @@ function parseDomain(domain: string): ParsedDomain {
   return p as ParsedDomain;
 }
 
-function ipForDroplet(droplet: Droplet): string {
-  if (droplet === undefined) { return undefined; }
-  let networks = droplet.networks.v4.filter(n => n.type === 'public');
-  return networks.length > 0 ? networks[0].ip_address : undefined;
-}
 
-function getDroplets(): Promise<Droplet[]> {
-  return DORunner.MakeRunner()
-    .then((runner) => {
-      return runner
-          .arg('compute droplet list')
-          .arg('-o json')
-          .exec();
 
-    })
-    .then((output) => { 
-      return JSON.parse(output) as Droplet[];
-     });
-}
 
-function getDroplet(name: string): Promise<Droplet> {
-  return getDroplets()
-    .then((droplets) => droplets.filter((d => d.name === name)))
-    .then((droplets) => {
-      if (droplets.length <= 0) { return undefined;}
-      return droplets[0];
-    });
-}
 
-function createDroplet(name: string): Promise<Droplet> {
-  return DORunner.MakeRunner()
-    .then((runner) => {
-      return runner
-        .arg(`compute droplet create ${name}`)
-        .arg(`--enable-private-networking`)
-        .arg(`--image fedora-28-x64-atomic`)
-        .arg(`--size s-1vcpu-2gb`)
-        .arg(`--region nyc3`)
-        .arg(`--ssh-keys b2:32:08:e6:3b:9b:17:c8:21:4e:a9:c5:bb:66:56:60`)
-        .arg(`--wait`)
-        .arg(`-o json`)
-        .exec();
-    })
-    .then((output) => {
-      const droplets = JSON.parse(output) as Droplet[];
-      return droplets[0];
-    });
-}
 
-function deleteDroplet(droplet: Droplet): Promise<void> {
-  return DORunner.MakeRunner()
-    .then((runner) => {
-      console.log(`Deleting droplet ${droplet.name} (${droplet.id})`);
-      return runner
-        .arg(`compute droplet delete ${droplet.id}`)
-        .arg('--force')
-        .exec()
-    })
-    .then(() => {})
-}
+
+
+
+
 
 function getDNSRecordsInZone(zone: string): Promise<DNSRecord[]> {
   return Promise.resolve()
@@ -260,6 +186,7 @@ function processArgs() {
 function handleCreate(args: {environmentName: string}): Promise<any> {
 
   let definition: def.IEnvironmentDefinition = undefined;
+  let dropletManager = new DropletManager();
 
   return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
@@ -269,7 +196,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     })
     .then((d) => { definition = d; })
     .then(() => { console.info(`Checking if ${definition.dropletName} already exists`) })
-    .then(() => getDroplet(definition.dropletName))
+    .then(() => dropletManager.getDroplet(definition.dropletName))
     .then((d) => {
       if (d !== undefined) { 
         return inquirer.prompt([
@@ -290,13 +217,13 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
       }
 
       console.info(`Droplet ${definition.dropletName} will be created`)
-      return createDroplet(definition.dropletName);
+      return dropletManager.createDroplet(definition.dropletName);
     })
     .then((droplet) => {
       console.log(`Name: ${droplet.name}`);
       console.log(`Id: ${droplet.id}`);
 
-      console.log(`IP: ${ipForDroplet(droplet)}`);
+      console.log(`IP: ${dropletManager.ipForDroplet(droplet)}`);
 
       return droplet;
     })
@@ -304,7 +231,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
       let firstPromise = Promise.resolve();
       let lastPromise: Promise<any> = firstPromise;
 
-      let dropletIp = ipForDroplet(droplet);
+      let dropletIp = dropletManager.ipForDroplet(droplet);
       definition.domainNames.forEach(d => {
         lastPromise = lastPromise.then(() => {
           return createOrUpdateDNSARecord(d, dropletIp)
@@ -328,6 +255,8 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
   let deleteActions: (() => Promise<any>)[] = [];
   let definition: def.IEnvironmentDefinition = undefined;
 
+  let dropletManager = new DropletManager();
+
   return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
       console.error(`Could not read definition file: `, err.message);
@@ -335,11 +264,11 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
       return definition;
     })
     .then((d) => { definition = d; })
-    .then(() => getDroplet(definition.dropletName))
+    .then(() => dropletManager.getDroplet(definition.dropletName))
     .then((droplet) => { 
       if (droplet !== undefined) {
         console.log(`Will delete droplet ${droplet.name} (${droplet.id})`);
-        deleteActions.push((() => deleteDroplet(droplet)));
+        deleteActions.push((() => dropletManager.deleteDroplet(droplet)));
       }
     })
     .then(() => {
