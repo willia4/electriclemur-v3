@@ -4,7 +4,7 @@ import * as Path from 'path';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 import { DropletManager } from './manager.droplet';
 
-import * as vol from './volume_manager';
+import { VolumeManager } from './volume_manager';
 
 interface IListOutput {
   [g: string]: {
@@ -92,6 +92,8 @@ function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): 
   };
 
   if (skipVolumes) { return Promise.resolve(r); }
+
+  let vol = new VolumeManager();
 
   return Promise.resolve()
     .then(() => vol.getOrCreateVolume('database'))
