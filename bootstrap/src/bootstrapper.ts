@@ -4,10 +4,12 @@ import { DNSManager } from './manager.dns';
 
 import * as yargs from 'yargs';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import * as inquirer from 'inquirer';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 import { AnsibleRunner } from './ansible_runner';
+import { ScriptRunner } from './script_runner';
 
 const yaml = require('yaml');
 
@@ -78,6 +80,14 @@ function createDroplet(dropletManager: DropletManager, environment: IEnvironment
     });
 }
 
+function createDockerCerts(environment: IEnvironmentDefinition): Promise<any> {
+  return ScriptRunner.MakeRunner()
+    .then((runner) => {
+      let scriptPath = path.normalize(path.join(path.normalize(__dirname), '../make-docker-certs.sh'))
+      return runner.exec(`${scriptPath} ${environment.environmentName}`, true);
+    })
+}
+
 function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, environment: IEnvironmentDefinition, droplet: IDroplet): Promise<IDroplet> {
   let firstPromise = Promise.resolve();
   let lastPromise: Promise<any> = firstPromise;
@@ -112,6 +122,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     .then((d) => { definition = d; })
     .then(() => createDroplet(dropletManager, definition))
     .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
+    .then(() => createDockerCerts(definition))
     .then(() => AnsibleRunner.RunPlaybook(definition, "configure-docker-certs"))
     .catch((err) => {
       console.error(`Error:`)
