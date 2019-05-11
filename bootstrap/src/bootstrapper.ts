@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { DropletManager } from './manager.droplet';
+import { DropletManager, IDroplet } from './manager.droplet';
 import { DNSManager } from './manager.dns';
 
 import * as yargs from 'yargs';
@@ -41,24 +41,12 @@ function processArgs() {
 }
 
 
-function handleCreate(args: {environmentName: string}): Promise<any> {
-
-  let definition: IEnvironmentDefinition = undefined;
-
-  let dropletManager = new DropletManager();
-  let dnsManager = new DNSManager();
-
-  return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
-    .catch((err: Error) => {
-      console.error(`Could not read definition file: `, err.message);
-      process.exit(1);
-      return definition;
-    })
-    .then((d) => { definition = d; })
-    .then(() => { console.info(`Checking if ${definition.dropletName} already exists`) })
-    .then(() => dropletManager.getDroplet(definition.dropletName))
+function createDroplet(dropletManager: DropletManager, environment: IEnvironmentDefinition): Promise<IDroplet> {
+  console.info(`Checking if ${environment.dropletName} already exists`);
+  
+  return dropletManager.getDroplet(environment.dropletName)
     .then((d) => {
-      if (d !== undefined) { 
+      if (d !== undefined) {
         return inquirer.prompt([
           {
             type: 'confirm',
@@ -76,8 +64,8 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
         });
       }
 
-      console.info(`Droplet ${definition.dropletName} will be created`)
-      return dropletManager.createDroplet(definition.dropletName);
+      console.info(`Droplet ${environment.dropletName} will be created`);
+      return dropletManager.createDroplet(environment.dropletName);
     })
     .then((droplet) => {
       console.log(`Name: ${droplet.name}`);
@@ -86,24 +74,43 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
       console.log(`IP: ${dropletManager.ipForDroplet(droplet)}`);
 
       return droplet;
-    })
-    .then((droplet) => {
-      let firstPromise = Promise.resolve();
-      let lastPromise: Promise<any> = firstPromise;
+    });
+}
 
-      let dropletIp = dropletManager.ipForDroplet(droplet);
-      definition.domainNames.forEach(d => {
-        lastPromise = lastPromise.then(() => {
-          return dnsManager.createOrUpdateDNSARecord(d, dropletIp)
-            .then((dns) => {
-              console.log(`Created DNS record for ${d}`);
-              console.log(dns);
-            });
+function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, environment: IEnvironmentDefinition, droplet: IDroplet): Promise<IDroplet> {
+  let firstPromise = Promise.resolve();
+  let lastPromise: Promise<any> = firstPromise;
+
+  let dropletIp = dropletManager.ipForDroplet(droplet);
+  environment.domainNames.forEach(d => {
+    lastPromise = lastPromise.then(() => {
+      return dnsManager.createOrUpdateDNSARecord(d, dropletIp)
+        .then((dns) => {
+          console.log(`Created DNS record for ${d}`);
+          console.log(dns);
         });
-      });
+    });
+  });
 
-      return lastPromise.then(() => droplet);
+  return lastPromise.then(() => droplet);
+}
+
+function handleCreate(args: {environmentName: string}): Promise<any> {
+
+  let definition: IEnvironmentDefinition = undefined;
+
+  let dropletManager = new DropletManager();
+  let dnsManager = new DNSManager();
+
+  return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
+    .catch((err: Error) => {
+      console.error(`Could not read definition file: `, err.message);
+      process.exit(1);
+      return definition;
     })
+    .then((d) => { definition = d; })
+    .then(() => createDroplet(dropletManager, definition))
+    .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
     .catch((err) => {
       console.error(`Error:`)
       console.error(err);
