@@ -5,5 +5,9 @@
       "staging.electriclemur.com",
       "jameswilliams.staging.electriclemur.com",
       "wishlist.jameswilliams.staging.electriclemur.com"
+    ],
+  "urlMap": 
+    [
+      { "key": "%%JAMESWILLIAMS-BASE-HOST%%", "value": "jameswilliams.staging.electriclemur.com" }
     ]
 }

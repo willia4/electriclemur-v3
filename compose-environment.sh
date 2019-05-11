@@ -3,6 +3,8 @@
 FILE=$1
 ENVIRONMENT=$2
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if [[ ! -f "$FILE" ]]; then
   echo "USAGE: compose-environment.sh COMPOSE-FILE ENVIRONMENT-NAME"
   echo "ERROR: COMPOSE-FILE \"$FILE\" does not exist"
@@ -18,10 +20,10 @@ fi
 # convert environment to upper case
 ENVIRONMENT=$(echo "$ENVIRONMENT" | awk '{print tolower($0)}')
 
-if [[ "$ENVIRONMENT" != "staging" && "$ENVIRONMENT" != "prod" ]]; then
+ENVIRONMENTFILE="$DIR/environments/$ENVIRONMENT.json"
+if [[ ! -f "$ENVIRONMENTFILE" ]]; then
   echo "USAGE: compose-environment.sh COMPOSE-FILE ENVIRONMENT-NAME"
-  echo "ERROR: ENVIRONMENT-NAME must be one of (\"staging\", \"prod\")"
-  echo "ERROR: ENVIRONMENT-NAME was \"$ENVIRONMENT\" "
+  echo "ERROR: ENVIRONMENT-NAME \"$ENVIRONMENT\" does not exist at \"$ENVIRONMENTFILE\""
   exit 3
 fi
 
@@ -47,7 +49,7 @@ COMPOSE=$(echo "$COMPOSE" | sed "s/%%ENVIRONMENT%%/$ENVIRONMENT/g")
 # use the IFS variable to let us treat each sed line as one 
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
- for SED in $(cat environment-url-map.json | jq -r ".$ENVIRONMENT[] | \"s/\" + .key + \"/\" + .value + \"/g\" ") 
+ for SED in $(cat $ENVIRONMENTFILE | jq -r ".urlMap[] | \"s/\" + .key + \"/\" + .value + \"/g\" ") 
  do
   COMPOSE=$(echo "$COMPOSE" | sed "$SED")
  done

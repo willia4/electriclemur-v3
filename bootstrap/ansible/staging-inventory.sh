@@ -6,7 +6,7 @@ HOST=$2
 ENVIRONMENT=$1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-DEF="$DIR/../staging.json"
+DEF="$DIR/../../environments/staging.json"
 DROPLET_NAME=$(cat "$DEF" | jq -r '.dropletName')
 DOCKER_NAME=$(docker info 2> /dev/null | grep '^Name: ' | sed 's/Name: //g')
 
