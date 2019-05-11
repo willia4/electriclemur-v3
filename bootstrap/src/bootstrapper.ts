@@ -7,6 +7,7 @@ import * as fs from 'fs';
 
 import * as inquirer from 'inquirer';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
+import { AnsibleRunner } from './ansible_runner';
 
 const yaml = require('yaml');
 
@@ -111,6 +112,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     .then((d) => { definition = d; })
     .then(() => createDroplet(dropletManager, definition))
     .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
+    .then(() => AnsibleRunner.RunPlaybook(definition, "configure-docker-certs"))
     .catch((err) => {
       console.error(`Error:`)
       console.error(err);
