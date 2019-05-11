@@ -93,7 +93,7 @@ function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): 
 
   if (skipVolumes) { return Promise.resolve(r); }
 
-  let vol = new VolumeManager();
+  let vol = new VolumeManager(environment);
 
   return Promise.resolve()
     .then(() => vol.getOrCreateVolume('database'))

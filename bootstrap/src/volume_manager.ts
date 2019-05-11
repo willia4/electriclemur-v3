@@ -1,5 +1,5 @@
 import { DockerRunner } from './docker_runner';
-import * as yargs from 'yargs';
+import { IEnvironmentDefinition } from './manager.environment';
 
 interface IVolume {
   Driver: string;
@@ -11,6 +11,8 @@ interface IVolume {
 }
 
 export class VolumeManager {
+
+  constructor(private environment: IEnvironmentDefinition) {}
 
   public inspectVolume(volumeName: string): Promise<IVolume> {
     if (!volumeName) { return Promise.resolve(undefined); }
@@ -27,7 +29,7 @@ export class VolumeManager {
     volumeNames = volumeNames.filter(v => !!v);
     if (!volumeNames.length) { return Promise.resolve([]); }
 
-    return DockerRunner.MakeRunner()
+    return DockerRunner.MakeRunner(this.environment)
       .then((runner) => {
         return runner
           .arg('volume inspect')
@@ -38,7 +40,7 @@ export class VolumeManager {
   }
 
   public getVolumes(labelFilter: string = undefined): Promise<IVolume[]> {
-    return DockerRunner.MakeRunner()
+    return DockerRunner.MakeRunner(this.environment)
       .then((runner) => {
         runner.arg('volume list');
         if (labelFilter) {
@@ -53,7 +55,7 @@ export class VolumeManager {
   }
 
   public createVolume(label: string): Promise<IVolume> {
-    return DockerRunner.MakeRunner()
+    return DockerRunner.MakeRunner(this.environment)
       .then((runner) => {
         runner.arg(`volume create`);
 

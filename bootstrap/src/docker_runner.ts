@@ -1,8 +1,20 @@
+import { IEnvironmentDefinition } from './manager.environment';
 import * as child from 'child_process';
+import * as path from 'path';
 
 export class DockerRunner {
-  static MakeRunner(): Promise<DockerRunner> {
-    return Promise.resolve(new DockerRunner('/usr/bin/docker'));
+  static MakeRunner(environment: IEnvironmentDefinition): Promise<DockerRunner> {
+    let runner = new DockerRunner('/usr/bin/docker');
+    // docker --host tcp://staging.electriclemur.com:2376 --tlsverify --tlscacert ./ca.pem --tlscert ./cert.pem --tlskey ./key.pem volume
+
+    runner
+      .arg(`--host tcp://${environment.fqdn}:2376`)
+      .arg(`--tlsverify`)
+      .arg(`--tlscacert '${path.join(environment.dockerCertPath, 'ca.pem')}'`)
+      .arg(`--tlscert '${path.join(environment.dockerCertPath, 'cert.pem')}'`)
+      .arg(`--tlskey '${path.join(environment.dockerCertPath, 'key.pem')}'`)
+
+    return Promise.resolve(runner);
   }
 
   private _cmd: string = undefined;
