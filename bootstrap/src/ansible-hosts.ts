@@ -2,7 +2,7 @@
 import { DockerRunner } from './docker_runner';
 import * as yargs from 'yargs';
 import * as Path from 'path';
-import * as def from './environment_definition';
+import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 import * as vol from './volume_manager';
 
 interface IListOutput {
@@ -50,7 +50,7 @@ function handleList(args: {environment: string}): Promise<void> {
   const environmentSecretsPath = Path.join(secretsPath, args.environment);
   const awsSecretsPath = Path.join(secretsPath, 'aws');
 
-  let environmentDefinition: def.IEnvironmentDefinition = undefined;
+  let environmentDefinition: IEnvironmentDefinition = undefined;
   
   let databaseMount: string = undefined; 
   let sshKeyMount: string = undefined;
@@ -62,7 +62,7 @@ function handleList(args: {environment: string}): Promise<void> {
   let mydwynterTeaComVolumeId: string = undefined;
   let crowglassDesignComVolumeId: string = undefined;
 
-  return def.getEnvironmentDefinition(args.environment)
+  return EnvironmentManager.getEnvironmentDefinition(args.environment)
     .then((definition) => {
       environmentDefinition = definition;
     })

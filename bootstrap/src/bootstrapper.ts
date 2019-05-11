@@ -6,7 +6,7 @@ import * as yargs from 'yargs';
 import * as fs from 'fs';
 
 import * as inquirer from 'inquirer';
-import * as def from './environment_definition';
+import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 
 const yaml = require('yaml');
 
@@ -43,11 +43,12 @@ function processArgs() {
 
 function handleCreate(args: {environmentName: string}): Promise<any> {
 
-  let definition: def.IEnvironmentDefinition = undefined;
+  let definition: IEnvironmentDefinition = undefined;
+
   let dropletManager = new DropletManager();
   let dnsManager = new DNSManager();
 
-  return def.getEnvironmentDefinition(args.environmentName)
+  return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
       console.error(`Could not read definition file: `, err.message);
       process.exit(1);
@@ -112,12 +113,12 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
 
 function handleDelete(args: {environmentName: string}): Promise<any> {
   let deleteActions: (() => Promise<any>)[] = [];
-  let definition: def.IEnvironmentDefinition = undefined;
+  let definition: IEnvironmentDefinition = undefined;
 
   let dropletManager = new DropletManager();
   let dnsManager = new DNSManager();
 
-  return def.getEnvironmentDefinition(args.environmentName)
+  return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
       console.error(`Could not read definition file: `, err.message);
       process.exit(1);
