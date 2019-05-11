@@ -1,35 +1,14 @@
 #!/usr/bin/env node
-import {DropletManager, IDroplet } from './manager.droplet';
+import { DropletManager } from './manager.droplet';
+import { DNSManager } from './manager.dns';
 
-import { DORunner } from './do_runner';
 import * as yargs from 'yargs';
 import * as fs from 'fs';
 
-import * as _parseDomain from 'parse-domain';
 import * as inquirer from 'inquirer';
 import * as def from './environment_definition';
 
 const yaml = require('yaml');
-
-
-
-interface ParsedDomain {
-  subdomain: string,
-  domain: string,
-  tld: string,
-  zone: string
-}
-
-interface DNSRecord {
-  id: number,
-  type: string,
-  name: string,
-  data: string,
-  ttl: number,
-  zone: string
-}
-
-let cached_dns_records: Map<string, DNSRecord[]> = new Map<string, DNSRecord[]>();
 
 function getApiKey(): Promise<string> {
   const path = "/home/willia4/.config/doctl/config.yaml";
@@ -37,127 +16,6 @@ function getApiKey(): Promise<string> {
   //return data['access-token'];
 
   return Promise.resolve(data['access-token']);
-}
-
-function parseDomain(domain: string): ParsedDomain {
-  let p = _parseDomain(domain);
-  p.zone = `${p.domain}.${p.tld}`;
-  return p as ParsedDomain;
-}
-
-
-
-
-
-
-
-
-
-
-
-function getDNSRecordsInZone(zone: string): Promise<DNSRecord[]> {
-  return Promise.resolve()
-    .then(() => {
-      if ( cached_dns_records.has(zone) ) { return Promise.resolve(); }
-      return DORunner.MakeRunner()
-        .then((runner) => {
-          return runner
-              .arg(`compute domain records list ${zone}`)
-              .arg('-o json')
-              .exec();
-        })
-        .then((output) => { 
-
-          let records = JSON.parse(output) as DNSRecord[];
-          records.forEach(r => { r.zone = zone; })
-          cached_dns_records.set(zone, records);
-        })
-    })
-    .then(() => cached_dns_records.get(zone));
-}
-
-function getDNSRecord(fqdn: string): Promise<DNSRecord> {
-  let parsed = parseDomain(fqdn);
-  return getDNSRecordsInZone(parsed.zone)
-    .then((records) => {
-      let found: DNSRecord[] = [];
-      if (!parsed.subdomain) {
-        found = records.filter(r => r.name === '@' && r.type === 'A');
-      }
-      else {
-        found = records.filter(r => r.name === parsed.subdomain && r.type === 'A');
-      } 
-
-      if (found.length <= 0) { return undefined; }
-      return found[0];     
-    });
-}
-
-function createOrUpdateDNSARecord(fqdn: string, ipAddress: string): Promise<DNSRecord> {
-  const parsed = parseDomain(fqdn);
-
-  function _createDNSARecord(zone: string, recordName: string, ipAddress: string): Promise<DNSRecord> {
-    if (!recordName) { throw `Cannot create new A record for ${zone} zone. Create this in the portal.`}
-
-    return DORunner.MakeRunner()
-      .then(runner => {
-        return runner
-          .arg(`compute domain records create ${zone}`)
-          .arg(`--record-name ${recordName}`)
-          .arg(`--record-type A`)
-          .arg(`--record-data ${ipAddress}`)
-          .arg(`--record-ttl 30`)
-          .arg(`-o json`)
-          .exec()
-          .then((data) => {
-            return (JSON.parse(data) as DNSRecord[])[0];
-          })
-      });
-  }
-
-  function _updateDNSARecord(recordId: number, zone: string, ipAddress: string): Promise<DNSRecord> {
-    return DORunner.MakeRunner()
-      .then(runner => {
-        return runner
-          .arg(`compute domain records update ${zone}`)
-          .arg(`--record-id ${recordId}`)
-          .arg(`--record-type A`)
-          .arg(`--record-data ${ipAddress}`)
-          .arg(`--record-ttl 30`)
-          .arg(`-o json`)
-          .exec()
-          .then((data) => {
-            return (JSON.parse(data) as DNSRecord[])[0];
-          })
-      });
-  }
-
-  return getDNSRecord(fqdn)
-    .then(record => {
-      if (record === undefined) {
-        return _createDNSARecord(parsed.zone, parsed.subdomain, ipAddress);
-      }
-      else {
-        if (record.data !== ipAddress) {
-          return _updateDNSARecord(record.id, parsed.zone, ipAddress);
-        }
-        else {
-          return record;
-        }
-      }
-    })
-}
-
-function deleteDnsRecord(record: DNSRecord): Promise<void> {
-  return DORunner.MakeRunner()
-    .then((runner) => {
-      console.log(`Deleting ${record.name} in ${record.zone} (${record.id})`)
-      return runner
-        .arg(`compute domain records delete ${record.zone} ${record.id}`)
-        .arg('--force')
-        .exec()
-    })
-    .then(() => {});
 }
 
 function processArgs() {
@@ -187,6 +45,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
 
   let definition: def.IEnvironmentDefinition = undefined;
   let dropletManager = new DropletManager();
+  let dnsManager = new DNSManager();
 
   return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
@@ -234,7 +93,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
       let dropletIp = dropletManager.ipForDroplet(droplet);
       definition.domainNames.forEach(d => {
         lastPromise = lastPromise.then(() => {
-          return createOrUpdateDNSARecord(d, dropletIp)
+          return dnsManager.createOrUpdateDNSARecord(d, dropletIp)
             .then((dns) => {
               console.log(`Created DNS record for ${d}`);
               console.log(dns);
@@ -256,6 +115,7 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
   let definition: def.IEnvironmentDefinition = undefined;
 
   let dropletManager = new DropletManager();
+  let dnsManager = new DNSManager();
 
   return def.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
@@ -277,11 +137,11 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
 
       definition.domainNames.forEach((fqdn) => {
         lastPromise = lastPromise.then(() => {
-          return getDNSRecord(fqdn)
+          return dnsManager.getDNSRecord(fqdn)
             .then((record) => {
               if (record !== undefined) {
                 console.log(`Will delete DNS record ${fqdn} ${record.id}`)
-                deleteActions.push((() => deleteDnsRecord(record)));
+                deleteActions.push((() => dnsManager.deleteDnsRecord(record)));
               }
             })
         })
