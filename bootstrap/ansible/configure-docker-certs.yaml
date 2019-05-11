@@ -1,0 +1,47 @@
+---
+- hosts: lemur
+  name: Configure Docker Certificates
+
+  tasks:
+  - name: Determine if server cert directory exists
+    stat: path=/etc/docker_certs
+    register: docker_certs_stat 
+
+  - name: Create server cert directory
+    file:
+      path: /etc/docker_certs
+      state: directory
+    when: docker_certs_stat.stat.exists == False
+
+  - name: Copy docker CA
+    copy:
+      src: "{{ secretsPath }}/docker_certs/{{ item }}"
+      dest: "/etc/docker_certs"
+    with_items:
+      - ca.pem
+
+  - name: Copy docker certs
+    copy:
+      src: "{{ secretsPath }}/docker_certs/{{ fqdn }}/{{ item }}"
+      dest: "/etc/docker_certs"
+    with_items:
+      - server-cert.pem
+      - server-key.pem
+
+  - name: Remove Environment variable OPTIONS from /etc/sysconfig/docker
+    lineinfile:
+      dest: /etc/sysconfig/docker
+      regexp: '^OPTIONS'
+      state: absent
+
+  - name: Modify Environment variable OPTIONS in /etc/sysconfig/docker
+    lineinfile:
+      dest: /etc/sysconfig/docker
+      line: "OPTIONS='--selinux-enabled --log-driver=journald --tlsverify --tlscacert=/etc/docker_certs/ca.pem --tlscert=/etc/docker_certs/server-cert.pem --tlskey=/etc/docker_certs/server-key.pem -H=0.0.0.0:2376 -H=unix:///var/run/docker.sock'"
+      state: present
+
+  - name: Reload Docker daemon
+    command: systemctl daemon-reload
+    
+  - name: Restart Docker daemon
+    command: systemctl restart docker.service

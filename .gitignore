@@ -5,3 +5,5 @@ bootstrap/ansible/*.retry
 
 secrets/*
 !secrets/readme.md
+!secrets/scripts
+!secrets/scripts/*

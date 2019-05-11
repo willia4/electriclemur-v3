@@ -36,15 +36,21 @@ You can then bootstrap for a particular environment with the bootstrap script. F
 
 Note that environments are defined in `./bootstrap/ENVIRONMENT.json` files and also have directories in `./secrets`. 
 
-### Phase 1 - Step 2 - Update Docker Environment 
+### Phase 2 - Step 2 - Generate the TLS certs for Docker 
 
-Use the [rdocker script][rdocker] to configure your local docker command to tunnel to the environment in Digital Ocean.
+Now that a hostname and IP address are available, you need to generate/update the Docker TLS certs:
 
-You will need to use an `rdocker` command appropriate for your environment (see the `./bootstrap/ENVIRONMENT.json` file for domains). For example: 
+    ./bootstrap/make-docker-certs.sh staging
 
-    rdocker root@staging.electriclemur.com
+Once the certs exist, you can update the remote environment to use them (note that this command uses the `-no-volumes` variant of the inventory script because we can't yet connect to Docker to create volumes): 
 
-[rdocker]: https://github.com/dvddarias/rdocker
+    ansible-playbook -i ./bootstrap/ansible/staging-inventory-no-volumes.sh ./bootstrap/ansible/configure-docker-certs.yaml
+
+### Phase 1 - Step 3 - Update Docker Environment 
+
+Configure your local environment to use the TLS certs to talk to Docker 
+
+    source ./secrets/staging/docker_certs/staging.electriclemur.com/source_me.sh
 
 ### Phase 2 - Step 1 - Upload Static Files 
 
