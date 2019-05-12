@@ -45,7 +45,7 @@ See below for how to define an environment.
 
 Deploy containers to an environment with the `compose-environment.sh` script. 
 
-    ./compose-environment.sh ./compose-file.yaml staging
+    ./compose/compose-environment.sh ./compose/compose-file.yaml staging
 
 ## Environment Definition 
 

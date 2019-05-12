@@ -2,6 +2,7 @@
 
 FILE=$1
 ENVIRONMENT=$2
+CMD=$3
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -20,17 +21,23 @@ fi
 # convert environment to upper case
 ENVIRONMENT=$(echo "$ENVIRONMENT" | awk '{print tolower($0)}')
 
-ENVIRONMENTFILE="$DIR/environments/$ENVIRONMENT.json"
+ENVIRONMENTFILE="$DIR/../environments/$ENVIRONMENT.json"
 if [[ ! -f "$ENVIRONMENTFILE" ]]; then
   echo "USAGE: compose-environment.sh COMPOSE-FILE ENVIRONMENT-NAME"
   echo "ERROR: ENVIRONMENT-NAME \"$ENVIRONMENT\" does not exist at \"$ENVIRONMENTFILE\""
   exit 3
 fi
 
-DOCKER_NAME=$(docker info 2> /dev/null | grep 'Name:' | sed 's/Name: //g')
+if [[ -z "$CMD" ]]; then
+  CMD="up -d"
+fi
+
+FQDN=$(cat $ENVIRONMENTFILE | jq -r ".domainNames[0]")
 
 echo "Composing $FILE for $ENVIRONMENT environment"
-echo "to $DOCKER_NAME"
+echo "to $FQDN"
+
+ENV_DOCKER_CERTS_PATH="$DIR/../secrets/$ENVIRONMENT/docker_certs/$FQDN/client"
 
 # Read the compose file into a variable
 COMPOSE=$(cat "$FILE")
@@ -55,6 +62,10 @@ IFS=$(echo -en "\n\b")
  done
 IFS=$SAVEIFS
 
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://$FQDN:2376"
+export DOCKER_CERT_PATH="$ENV_DOCKER_CERTS_PATH"
 
-echo "$COMPOSE" | docker-compose -f - up -d
+echo "$COMPOSE" | docker-compose -f - $CMD
+
 # cat "$FILE" | sed "s/%%ENVIRONMENT%%/$ENVIRONMENT/g"
