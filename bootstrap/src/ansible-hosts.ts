@@ -18,6 +18,8 @@ interface IListOutput {
 
 interface IVolumeDefinition {
   databaseMount: string;
+  database_backup_mount: string;
+  database_backup_id: string;
   ssh_key_mount: string;
   ssh_user_mount: string;
   branheatherbycom_volume_id: string;
@@ -82,6 +84,8 @@ function processArgs() {
 function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): Promise<IVolumeDefinition> {
   let r: IVolumeDefinition = {
     databaseMount: undefined,
+    database_backup_mount: undefined,
+    database_backup_id: undefined,
     ssh_key_mount: undefined,
     ssh_user_mount: undefined,
     branheatherbycom_volume_id: undefined,
@@ -99,6 +103,12 @@ function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): 
     .then(() => vol.getOrCreateVolume('database'))
     .then((volume) => {
       r.databaseMount = volume.Mountpoint;
+    })
+
+    .then(() => vol.getOrCreateVolume('databaseBackup'))
+    .then((volume) => {
+      r.database_backup_mount = volume.Mountpoint;
+      r.database_backup_id = volume.Name;
     })
 
     .then(() => vol.getOrCreateVolume('sshKeys'))

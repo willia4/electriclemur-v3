@@ -51,6 +51,9 @@
     with_items: 
       - authorized_keys
 
+  ############ Database backups
+  - name: Copy database backups from S3
+    shell: "docker run --rm -v '{{ database_backup_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete s3://com.electriclemur.databases/db1 /v"
 
   ############ branheatherby.com volume 
 
