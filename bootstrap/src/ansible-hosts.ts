@@ -4,7 +4,7 @@ import * as Path from 'path';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 import { DropletManager } from './manager.droplet';
 
-import { VolumeManager } from './volume_manager';
+import { VolumeManager, IVolume } from './volume_manager';
 
 interface IListOutput {
   [g: string]: {
@@ -17,16 +17,22 @@ interface IListOutput {
 }
 
 interface IVolumeDefinition {
-  databaseMount: string;
-  database_backup_mount: string;
-  database_backup_id: string;
-  ssh_key_mount: string;
-  ssh_user_mount: string;
-  branheatherbycom_volume_id: string;
-  mydwyntercom_volume_id: string;
-  mydwynterstudioscom_volume_id: string;
-  mydwynterteacom_volume_id: string;
-  crowglassdesigncom_volume_id: string;
+  id: string,
+  mountPath: string
+}
+
+interface IKnownVolumesDefinition {
+  database: IVolumeDefinition;
+  database_backup: IVolumeDefinition;
+  
+  ssh_key: IVolumeDefinition;
+  ssh_user: IVolumeDefinition;
+
+  branheatherby_com: IVolumeDefinition;
+  mydwynter_com: IVolumeDefinition;
+  mydwynterstudios_com: IVolumeDefinition;
+  mydwyntertea_com: IVolumeDefinition;
+  crowglassdesign_com: IVolumeDefinition;
 }
 
 function processArgs() {
@@ -73,6 +79,14 @@ function processArgs() {
         required: true
       })
     }, handleFQDN)
+
+    .command(`volume-ls <environment`, 'print volume information for an environment', (yargs) => {
+      return yargs.positional('environment', {
+        describe: 'environment that contains the volumes',
+        type: 'string',
+        required: true
+      })
+    }, handleVolumeList)
     .argv;
   // return yargs
   //   .option('list', {
@@ -81,20 +95,28 @@ function processArgs() {
   //   });
 }
 
-function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): Promise<IVolumeDefinition> {
-  let r: IVolumeDefinition = {
-    databaseMount: undefined,
-    database_backup_mount: undefined,
-    database_backup_id: undefined,
-    ssh_key_mount: undefined,
-    ssh_user_mount: undefined,
-    branheatherbycom_volume_id: undefined,
-    mydwyntercom_volume_id: undefined,
-    mydwynterstudioscom_volume_id: undefined,
-    mydwynterteacom_volume_id: undefined,
-    crowglassdesigncom_volume_id: undefined,
+function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): Promise<IKnownVolumesDefinition> {
+  let r: IKnownVolumesDefinition = {
+    database: undefined,
+    database_backup: undefined,
+    ssh_key: undefined,
+    ssh_user: undefined,
+    branheatherby_com: undefined,
+    mydwynter_com: undefined,
+    mydwynterstudios_com: undefined,
+    mydwyntertea_com: undefined,
+    crowglassdesign_com: undefined
   };
 
+  let volumeToDefinition = (vol: IVolume) => {
+    let r: IVolumeDefinition = {
+      id: vol.Name,
+      mountPath: vol.Mountpoint
+    }
+
+    return r;
+  };
+  
   if (skipVolumes) { return Promise.resolve(r); }
 
   let vol = new VolumeManager(environment);
@@ -102,48 +124,47 @@ function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): 
   return Promise.resolve()
     .then(() => vol.getOrCreateVolume('database'))
     .then((volume) => {
-      r.databaseMount = volume.Mountpoint;
+      r.database = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('databaseBackup'))
+    .then(() => vol.getOrCreateVolume('database_backup'))
     .then((volume) => {
-      r.database_backup_mount = volume.Mountpoint;
-      r.database_backup_id = volume.Name;
+      r.database_backup = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('sshKeys'))
+    .then(() => vol.getOrCreateVolume('ssh_key'))
     .then((volume) => {
-      r.ssh_key_mount = volume.Mountpoint;
+      r.ssh_key = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('sshUser'))
+    .then(() => vol.getOrCreateVolume('ssh_user'))
     .then((volume) => {
-      r.ssh_user_mount = volume.Mountpoint;
+      r.ssh_user = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('branheatherbyCom'))
+    .then(() => vol.getOrCreateVolume('branheatherby_com'))
     .then((volume) => {
-      r.branheatherbycom_volume_id = volume.Name;
+      r.branheatherby_com = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('mydwynterCom'))
+    .then(() => vol.getOrCreateVolume('mydwynter_com'))
     .then((volume) => {
-      r.mydwyntercom_volume_id = volume.Name;
+      r.mydwynter_com = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('mydwynterstudiosCom'))
+    .then(() => vol.getOrCreateVolume('mydwynterstudios_com'))
     .then((volume) => {
-      r.mydwynterstudioscom_volume_id = volume.Name;
+      r.mydwynterstudios_com = volumeToDefinition(volume);
     })
     
-    .then(() => vol.getOrCreateVolume('mydwynterteaCom'))
+    .then(() => vol.getOrCreateVolume('mydwyntertea_com'))
     .then((volume) => {
-      r.mydwynterteacom_volume_id = volume.Name;
+      r.mydwyntertea_com = volumeToDefinition(volume);
     })
 
-    .then(() => vol.getOrCreateVolume('crowglassdesignCom'))
+    .then(() => vol.getOrCreateVolume('crowglassdesign_com'))
     .then((volume) => {
-      r.crowglassdesigncom_volume_id = volume.Name;
+      r.crowglassdesign_com = volumeToDefinition(volume);
     })
 
 
@@ -157,7 +178,7 @@ function handleList(args: {environment: string, noVolumes: boolean}): Promise<vo
 
   let environmentDefinition: IEnvironmentDefinition = undefined;
   
-  let volumeDefinition: IVolumeDefinition = undefined;
+  let volumeDefinition: IKnownVolumesDefinition = undefined;
 
   return EnvironmentManager.getEnvironmentDefinition(args.environment)
     .then((definition) => {
@@ -186,7 +207,10 @@ function handleList(args: {environment: string, noVolumes: boolean}): Promise<vo
       if (!args.noVolumes) {
         for(let p in volumeDefinition) {
           if (volumeDefinition.hasOwnProperty(p)) {
-            output["lemur"].vars[p] = volumeDefinition[p];
+            let volumeDef = volumeDefinition[p] as IVolumeDefinition;
+
+            output["lemur"].vars[`vol_${p}_id`] = volumeDef.id;
+            output["lemur"].vars[`vol_${p}_mount`] = volumeDef.mountPath;
           }
         }
       }
@@ -226,4 +250,15 @@ function handleFQDN(args: {environment: string}): Promise<void> {
     console.log(definition.domainNames[0]);
   })
 }
+
+function handleVolumeList(args: {environment: string}): Promise<void> {
+  return EnvironmentManager.getEnvironmentDefinition(args.environment)
+    .then((environment) => getVolumes(environment, false))
+    .then((volumes) => {
+      console.log(JSON.stringify(volumes, null, 2));
+    })
+    .then(() => { })
+  
+}
+
 processArgs();

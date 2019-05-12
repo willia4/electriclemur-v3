@@ -8,13 +8,13 @@
   tasks:
   ########### SSH Keys (for volumes)
   - name: Determine if SSH keys volume directory exists
-    stat: path="{{ ssh_key_mount }}"
+    stat: path="{{ vol_ssh_key_mount }}"
     register: ssh_keys_stat
 
   - name: Upload SSH keys to volume directory
     copy: 
       src: "{{ secretsPath }}/ssh_volumes/keys/{{ item }}"
-      dest: "{{ ssh_key_mount }}/"
+      dest: "{{ vol_ssh_key_mount }}/"
     with_items: 
       - ssh_host_dsa_key
       - ssh_host_ecdsa_key		
@@ -27,7 +27,7 @@
 
   - name: Protect SSH Keys
     file: 
-      path: "{{ ssh_key_mount }}/{{ item }}"
+      path: "{{ vol_ssh_key_mount }}/{{ item }}"
       mode: 0600
     with_items: 
       - ssh_host_dsa_key
@@ -41,41 +41,41 @@
 
   ############ SSH Authorized User (for volumes)
   - name: Determine if SSH user volume directory exists
-    stat: path="{{ ssh_user_mount }}"
+    stat: path="{{ vol_ssh_user_mount }}"
     register: ssh_user_stat
 
   - name: Upload SSH user volume to volume directory
     copy: 
       src: "{{ secretsPath }}/ssh_volumes/user/{{ item }}"
-      dest: "{{ ssh_user_mount }}/"
+      dest: "{{ vol_ssh_user_mount }}/"
     with_items: 
       - authorized_keys
 
   ############ Database backups
   - name: Copy database backups from S3
-    shell: "docker run --rm -v '{{ database_backup_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete s3://com.electriclemur.databases/db1 /v"
+    shell: "docker run --rm -v '{{ vol_database_backup_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete s3://com.electriclemur.databases/db1 /v"
 
   ############ branheatherby.com volume 
 
   - name: Restore branheatherby.com volume files from backup
-    shell: "docker run --rm -v '{{ branheatherbycom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/branheatherby.com' /v"
+    shell: "docker run --rm -v '{{ vol_branheatherby_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/branheatherby.com' /v"
     
   ############ mydwynter.com volume 
 
   - name: Restore mydwynter.com volume files from backup
-    shell: "docker run --rm -v '{{ mydwyntercom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynter.com' /v"
+    shell: "docker run --rm -v '{{ vol_mydwynter_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynter.com' /v"
 
   ############ mydwynterstudios.com volume 
 
   - name: Restore mydwynterstudios.com volume files from backup
-    shell: "docker run --rm -v '{{ mydwynterstudioscom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynterstudios.com' /v"
+    shell: "docker run --rm -v '{{ vol_mydwynterstudios_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynterstudios.com' /v"
     
   ############ mydwyntertea.com volume 
 
   - name: Restore mydwyntertea.com volume files from backup
-    shell: "docker run --rm -v '{{ mydwynterteacom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwyntertea.com' /v"
+    shell: "docker run --rm -v '{{ vol_mydwyntertea_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwyntertea.com' /v"
 
   ############ crowglassdesign.com volume 
 
   - name: Restore crowglassdesign.com volume files from backup
-    shell: "docker run --rm -v '{{ crowglassdesigncom_volume_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"
+    shell: "docker run --rm -v '{{ vol_crowglassdesign_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"

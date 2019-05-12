@@ -1,7 +1,7 @@
 import { DockerRunner } from './runner_docker';
 import { IEnvironmentDefinition } from './manager.environment';
 
-interface IVolume {
+export interface IVolume {
   Driver: string;
   Labels: { [k: string]: string };
   Mountpoint: string;
