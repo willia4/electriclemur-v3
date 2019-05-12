@@ -1,4 +1,4 @@
-import { DORunner } from './do_runner';
+import { DigitalOceanRunner } from './runner_digital_ocean';
 import * as _parseDomain from 'parse-domain';
 
 export interface IParsedDomain {
@@ -30,7 +30,7 @@ export class DNSManager {
     return Promise.resolve()
       .then(() => {
         if ( this.cached_dns_records.has(zone) ) { return Promise.resolve(); }
-        return DORunner.MakeRunner()
+        return DigitalOceanRunner.MakeRunner()
           .then((runner) => {
             return runner
                 .arg(`compute domain records list ${zone}`)
@@ -70,7 +70,7 @@ export class DNSManager {
     function _createDNSARecord(zone: string, recordName: string, ipAddress: string): Promise<IDNSRecord> {
       if (!recordName) { throw `Cannot create new A record for ${zone} zone. Create this in the portal.`}
   
-      return DORunner.MakeRunner()
+      return DigitalOceanRunner.MakeRunner()
         .then(runner => {
           return runner
             .arg(`compute domain records create ${zone}`)
@@ -87,7 +87,7 @@ export class DNSManager {
     }
   
     function _updateDNSARecord(recordId: number, zone: string, ipAddress: string): Promise<IDNSRecord> {
-      return DORunner.MakeRunner()
+      return DigitalOceanRunner.MakeRunner()
         .then(runner => {
           return runner
             .arg(`compute domain records update ${zone}`)
@@ -120,7 +120,7 @@ export class DNSManager {
   }
 
   public deleteDnsRecord(record: IDNSRecord): Promise<void> {
-    return DORunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner()
       .then((runner) => {
         console.log(`Deleting ${record.name} in ${record.zone} (${record.id})`)
         return runner

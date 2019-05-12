@@ -1,4 +1,4 @@
-import { DORunner } from './do_runner';
+import { DigitalOceanRunner } from './runner_digital_ocean';
 
 export interface IDroplet {
   id: number,
@@ -30,7 +30,7 @@ export interface IDroplet {
 export class DropletManager {
 
   public getDroplets(): Promise<IDroplet[]> {
-    return DORunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner()
       .then((runner) => {
         return runner
             .arg('compute droplet list')
@@ -53,7 +53,7 @@ export class DropletManager {
   }
 
   public createDroplet(name: string): Promise<IDroplet> {
-    return DORunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner()
       .then((runner) => {
         return runner
           .arg(`compute droplet create ${name}`)
@@ -73,7 +73,7 @@ export class DropletManager {
   }
 
   public deleteDroplet(droplet: IDroplet): Promise<void> {
-    return DORunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner()
       .then((runner) => {
         console.log(`Deleting droplet ${droplet.name} (${droplet.id})`);
         return runner

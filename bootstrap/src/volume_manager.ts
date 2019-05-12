@@ -1,4 +1,4 @@
-import { DockerRunner } from './docker_runner';
+import { DockerRunner } from './runner_docker';
 import { IEnvironmentDefinition } from './manager.environment';
 
 interface IVolume {
