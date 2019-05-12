@@ -16,97 +16,23 @@ export class AnsibleRunner {
     const inventoryPath = path.join(ansiblePath, inventoryScript);
     const playbookPath = path.join(ansiblePath, `${playbook}.yaml`);
 
-    return this.MakeRunner()
-      .then((runner) => {
-        return runner
-          .arg(`-i ${inventoryPath}`)
-          .arg(`${playbookPath}`)
-          .exec()
-      })
-      .then(() => {});
+    let runner = new AnsibleRunner('/usr/bin/ansible-playbook', inventoryPath, playbookPath);
+    return runner.exec().then(() => {});
   }
 
-  static MakeRunner(): Promise<AnsibleRunner> {
-    return Promise.resolve(new AnsibleRunner('/usr/bin/ansible-playbook'));
-  }
+  private constructor(
+    private _ansiblePath: string,
+    private _inventoryPath: string,
+    private _playbookPath: string) {  }
 
-  private _cmd: string = undefined;
-  private _args: string[] = [];
-
-  private constructor(cmd) {
-    this._cmd = cmd;
-  }
-
-  public arg(newArg: string) {
-    this._argStringToArray(newArg).forEach(a => { this._args.push(a); });
-    return this;
-  }
 
   public exec(): Promise<string> {
-    let fullCommand = [this._cmd, ...this._args].join(' ');
+    let fullCommand = `${this._ansiblePath} -i ${this._inventoryPath} ${this._playbookPath}`;
 
     return ScriptRunner.MakeRunner()
       .then((scriptRunner) => {
         scriptRunner.setEnvironmentVariable('ANSIBLE_HOST_KEY_CHECKING', 'False');
         return scriptRunner.exec(fullCommand, true);
       });
-  }
-
-  private _argStringToArray(argString: string): string[] {
-    var args = [];
-
-    var inQuotes = false;
-    var escaped = false;
-    var arg = '';
-
-    var append = function (c: any) {
-        // we only escape double quotes.
-        if (escaped && c !== '"') {
-            arg += '\\';
-        }
-
-        arg += c;
-        escaped = false;
-    }
-
-    for (var i = 0; i < argString.length; i++) {
-        var c = argString.charAt(i);
-
-        if (c === '"') {
-            if (!escaped) {
-                inQuotes = !inQuotes;
-            }
-            else {
-                append(c);
-            }
-            continue;
-        }
-
-        if (c === "\\" && escaped) {
-            append(c);
-            continue;
-        }
-
-        if (c === "\\" && inQuotes) {
-            escaped = true;
-            continue;
-        }
-
-        if (c === ' ' && !inQuotes) {
-            if (arg.length > 0) {
-                args.push(arg);
-                arg = '';
-            }
-            continue;
-        }
-
-        append(c);
-    }
-
-    if (arg.length > 0) {
-        args.push(arg.trim());
-    }
-
-    return args;
   }
 }
