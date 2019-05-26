@@ -63,3 +63,13 @@ Secrets are housed in the `./secrets` directory; this directory is not committed
 There is currently no documentation of which secrets are required for each container. 
 
 ***TODO***
+
+## Connect to Docker 
+
+To easily connect to the docker engine for an environment run 
+
+    source <(./bootstrap/dist/container.js print-env staging)
+
+This will your current bash session with the environment variables needed to transparently run `docker` commands. 
+
+Validate with `docker info`.

@@ -4,15 +4,32 @@ import { RunnerBase } from './runner_base';
 
 export class DockerRunner extends RunnerBase {
   static MakeRunner(environment: IEnvironmentDefinition): Promise<DockerRunner> {
-    let runner = new DockerRunner('/usr/bin/docker');
+    return Promise.resolve(new DockerRunner(environment));
+  }
 
-    runner
-      .arg(`--host tcp://${environment.fqdn}:2376`)
-      .arg(`--tlsverify`)
-      .arg(`--tlscacert '${path.join(environment.dockerCertPath, 'ca.pem')}'`)
-      .arg(`--tlscert '${path.join(environment.dockerCertPath, 'cert.pem')}'`)
-      .arg(`--tlskey '${path.join(environment.dockerCertPath, 'key.pem')}'`)
+  static GetDockerEnvironmentVariables(environment: IEnvironmentDefinition): Promise<{[key: string]: string}> {
+    let r: {[key: string]: string} = {
+      "DOCKER_TLS_VERIFY": "1",
+      "DOCKER_HOST": `tcp://${environment.fqdn}:2376`,
+      "DOCKER_CERT_PATH": `${environment.dockerCertPath}`
+    };
 
-    return Promise.resolve(runner);
+    return Promise.resolve(r);
+  }
+
+  public get environment(): IEnvironmentDefinition { return this._environment; }
+
+  constructor(private _environment: IEnvironmentDefinition) {
+    super('/usr/bin/docker');
+
+    this.arg(`--host tcp://${_environment.fqdn}:2376`)
+    this.arg(`--tlsverify`)
+    this.arg(`--tlscacert '${path.join(_environment.dockerCertPath, 'ca.pem')}'`)
+    this.arg(`--tlscert '${path.join(_environment.dockerCertPath, 'cert.pem')}'`)
+    this.arg(`--tlskey '${path.join(_environment.dockerCertPath, 'key.pem')}'`)
+  }
+
+  public clone(): Promise<DockerRunner> {
+    return Promise.resolve(new DockerRunner(this._environment));
   }
 }

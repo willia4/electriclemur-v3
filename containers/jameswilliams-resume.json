@@ -1,0 +1,6 @@
+{
+  "name": "jameswilliams-resume",
+  "image": "willia4/resume:3.0.0",
+  "hostRoute": "jameswilliams.staging.electriclemur.com",
+  "pathRoute": "/resume"
+}

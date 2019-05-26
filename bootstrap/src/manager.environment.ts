@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as fs from 'fs';
+import * as common from './common';
 
 interface IEnvironmentDefinition_JSON {
   environmentName: string,
@@ -19,16 +19,7 @@ export class EnvironmentManager {
     const definitionPath =  path.normalize(path.join(path.normalize(__dirname), `../../environments/${environmentName}.json`));
     const secretsPath = path.normalize(path.join(path.normalize(__dirname), `../../secrets/${environmentName}`));
 
-    return (new Promise<string>((resolve ,reject) => {
-      fs.readFile(definitionPath, { encoding: "utf8" }, (err, contents) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(contents);
-        return;
-      });
-    }))
+    return common.readFileAsync(definitionPath)
     .then((contents) => JSON.parse(contents) as IEnvironmentDefinition_JSON)
     .then((e) => {
       let fqdn = e.domainNames[0];

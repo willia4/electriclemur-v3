@@ -53,6 +53,11 @@ export class RunnerBase {
     });
   }
 
+  public outputCommand() {
+    console.log(this._cmd);
+    this._args.forEach((a) => console.log(a));
+  }
+
   private _argStringToArray(argString: string): string[] {
     var args = [];
 
