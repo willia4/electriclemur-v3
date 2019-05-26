@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import * as yargs from 'yargs';
-import * as Path from 'path';
+import * as path from 'path';
+import * as common from './common';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
 import { DropletManager } from './manager.droplet';
 
-import { VolumeManager, IVolume } from './volume_manager';
+import { VolumeManager, IVolume, IVolumeDefinition } from './volume_manager';
 
 interface IListOutput {
   [g: string]: {
@@ -14,25 +15,6 @@ interface IListOutput {
     },
     children: string[]
   }
-}
-
-interface IVolumeDefinition {
-  id: string,
-  mountPath: string
-}
-
-interface IKnownVolumesDefinition {
-  database: IVolumeDefinition;
-  database_backup: IVolumeDefinition;
-  
-  ssh_key: IVolumeDefinition;
-  ssh_user: IVolumeDefinition;
-
-  branheatherby_com: IVolumeDefinition;
-  mydwynter_com: IVolumeDefinition;
-  mydwynterstudios_com: IVolumeDefinition;
-  mydwyntertea_com: IVolumeDefinition;
-  crowglassdesign_com: IVolumeDefinition;
 }
 
 function processArgs() {
@@ -95,90 +77,47 @@ function processArgs() {
   //   });
 }
 
-function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): Promise<IKnownVolumesDefinition> {
-  let r: IKnownVolumesDefinition = {
-    database: undefined,
-    database_backup: undefined,
-    ssh_key: undefined,
-    ssh_user: undefined,
-    branheatherby_com: undefined,
-    mydwynter_com: undefined,
-    mydwynterstudios_com: undefined,
-    mydwyntertea_com: undefined,
-    crowglassdesign_com: undefined
-  };
 
-  let volumeToDefinition = (vol: IVolume) => {
-    let r: IVolumeDefinition = {
-      id: vol.Name,
-      mountPath: vol.Mountpoint
-    }
 
-    return r;
-  };
+function getVolumes(environment: IEnvironmentDefinition, skipVolumes: boolean): Promise<{[key: string]: IVolume}> {
+  let r: {[key: string]: IVolume} = {};
+
+  // let volumeToDefinition = (vol: IVolume) => {
+  //   let r: IVolumeDefinition = {
+  //     name: vol.Name,
+  //     mountPath: vol.Mountpoint
+  //   }
+
+  //   return r;
+  // };
   
   if (skipVolumes) { return Promise.resolve(r); }
 
   let vol = new VolumeManager(environment);
 
-  return Promise.resolve()
-    .then(() => vol.getOrCreateVolume('database'))
-    .then((volume) => {
-      r.database = volumeToDefinition(volume);
-    })
+  return vol.getVolumeDefinitions()
+    .then((definitions) => {
+      let lastPromise: Promise<any> = Promise.resolve(); 
 
-    .then(() => vol.getOrCreateVolume('database_backup'))
-    .then((volume) => {
-      r.database_backup = volumeToDefinition(volume);
-    })
+      definitions.forEach((def) => {
+        lastPromise = lastPromise
+          .then(() => vol.getOrCreateVolumeForDefinition(def))
+          .then((volume) => { r[def.name] = volume; })
+      })
 
-    .then(() => vol.getOrCreateVolume('ssh_key'))
-    .then((volume) => {
-      r.ssh_key = volumeToDefinition(volume);
+      return lastPromise;
     })
-
-    .then(() => vol.getOrCreateVolume('ssh_user'))
-    .then((volume) => {
-      r.ssh_user = volumeToDefinition(volume);
-    })
-
-    .then(() => vol.getOrCreateVolume('branheatherby_com'))
-    .then((volume) => {
-      r.branheatherby_com = volumeToDefinition(volume);
-    })
-
-    .then(() => vol.getOrCreateVolume('mydwynter_com'))
-    .then((volume) => {
-      r.mydwynter_com = volumeToDefinition(volume);
-    })
-
-    .then(() => vol.getOrCreateVolume('mydwynterstudios_com'))
-    .then((volume) => {
-      r.mydwynterstudios_com = volumeToDefinition(volume);
-    })
-    
-    .then(() => vol.getOrCreateVolume('mydwyntertea_com'))
-    .then((volume) => {
-      r.mydwyntertea_com = volumeToDefinition(volume);
-    })
-
-    .then(() => vol.getOrCreateVolume('crowglassdesign_com'))
-    .then((volume) => {
-      r.crowglassdesign_com = volumeToDefinition(volume);
-    })
-
-
-    .then(() => r);
+    .then(() => r)
 }
 
 function handleList(args: {environment: string, noVolumes: boolean}): Promise<void> {
-  const secretsPath = Path.normalize(Path.join(__dirname, '../../secrets'))
-  const environmentSecretsPath = Path.join(secretsPath, args.environment);
-  const awsSecretsPath = Path.join(secretsPath, 'aws');
+  const secretsPath = path.normalize(path.join(__dirname, '../../secrets'))
+  const environmentSecretsPath = path.join(secretsPath, args.environment);
+  const awsSecretsPath = path.join(secretsPath, 'aws');
 
   let environmentDefinition: IEnvironmentDefinition = undefined;
   
-  let volumeDefinition: IKnownVolumesDefinition = undefined;
+  let volumeDefinition: {[key: string]: IVolume} = undefined;
 
   return EnvironmentManager.getEnvironmentDefinition(args.environment)
     .then((definition) => {
@@ -197,8 +136,8 @@ function handleList(args: {environment: string, noVolumes: boolean}): Promise<vo
 
             "secretsPath": environmentSecretsPath,
 
-            "aws_backup_access_key_path": `${Path.join(awsSecretsPath, 'backup_access_key.txt')}`,
-            "aws_backup_access_secret_path": `${Path.join(awsSecretsPath, 'backup_access_secret.txt')}`
+            "aws_backup_access_key_path": `${path.join(awsSecretsPath, 'backup_access_key.txt')}`,
+            "aws_backup_access_secret_path": `${path.join(awsSecretsPath, 'backup_access_secret.txt')}`
           },
           children: []
         }
@@ -207,10 +146,10 @@ function handleList(args: {environment: string, noVolumes: boolean}): Promise<vo
       if (!args.noVolumes) {
         for(let p in volumeDefinition) {
           if (volumeDefinition.hasOwnProperty(p)) {
-            let volumeDef = volumeDefinition[p] as IVolumeDefinition;
+            let volumeDef = volumeDefinition[p];
 
-            output["lemur"].vars[`vol_${p}_id`] = volumeDef.id;
-            output["lemur"].vars[`vol_${p}_mount`] = volumeDef.mountPath;
+            output["lemur"].vars[`vol_${p}_id`] = volumeDef.Name;
+            output["lemur"].vars[`vol_${p}_mount`] = volumeDef.Mountpoint;
           }
         }
       }

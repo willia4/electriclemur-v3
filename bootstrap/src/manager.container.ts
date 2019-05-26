@@ -20,6 +20,7 @@ export interface IContainerDefinition {
 
   hostRoute?: string;
   pathRoute?: string;
+  user?: string;
 
   volumes?: IContainerDefinitionVolume[];
   ports?: IContainerDefinitionPort[];
@@ -63,18 +64,26 @@ export interface IContainer {
 }
 export class ContainerManager {
   static getContainerDefinitions(containerName: string): Promise<IContainerDefinition[]> {
-    
-    const definitionPath = path.normalize(path.join(path.normalize(__dirname), `../../containers/${containerName}.json`))
-    return common.readFileAsync(definitionPath)
-      .then((contents) => {
-        let data = JSON.parse(contents);
-        if (Array.isArray(data)) {
-          return data as IContainerDefinition[];
-        }
-        else {
-          return [data as IContainerDefinition];
-        }
-      })
+    if (containerName === ContainerManager.TraefikProxyName) {
+      let def: IContainerDefinition = {
+        name: ContainerManager.TraefikProxyName,
+        image: undefined
+      }
+      return Promise.resolve([def]);
+    }
+    else {
+      const definitionPath = path.normalize(path.join(path.normalize(__dirname), `../../containers/${containerName}.json`))
+      return common.readFileAsync(definitionPath)
+        .then((contents) => {
+          let data = JSON.parse(contents);
+          if (Array.isArray(data)) {
+            return data as IContainerDefinition[];
+          }
+          else {
+            return [data as IContainerDefinition];
+          }
+        });
+    }
   }
 
   static get TraefikProxyName(): string { return 'traefik_proxy'};
@@ -190,6 +199,7 @@ export class ContainerManager {
         .then((runner) => this.runner_addVolumes(runner, def))
         .then((runner) => this.runner_addPorts(runner, def))
         .then((runner) => this.runner_addEnvironmentVariables(runner, def))
+        .then((runner) => this.runner_addUser(runner, def))
 
         // Add image at end of command line
         .then((runner) => { 
@@ -213,6 +223,14 @@ export class ContainerManager {
 
         return lastPromise.then(() => results);
       })
+  }
+
+  private runner_addUser(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
+    if (def.user) {
+      runner.arg(`-u "${def.user}"`);
+    }
+
+    return Promise.resolve(runner);
   }
 
   private runner_addLabels(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {

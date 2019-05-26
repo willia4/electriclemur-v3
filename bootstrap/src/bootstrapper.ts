@@ -123,7 +123,7 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     .then(() => createDroplet(dropletManager, definition))
     .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
     .then(() => createDockerCerts(definition))
-    .then(() => AnsibleRunner.RunPlaybook(definition, "configure-docker-certs"))
+    .then(() => AnsibleRunner.RunPlaybook(definition, "init-host"))
     .then(() => AnsibleRunner.RunPlaybook(definition, "upload-files"))
     .catch((err) => {
       console.error(`Error:`)
