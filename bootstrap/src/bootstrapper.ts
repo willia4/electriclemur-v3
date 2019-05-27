@@ -37,9 +37,18 @@ function processArgs() {
       .positional('environmentName', {
         type: 'string',
         required: true,
-        describe: 'environment to create'
+        describe: 'environment to delete'
       })
     }, handleDelete)
+
+    .command('update-dns <environmentName>', 'update the DNS records for an environment', (yargs) => {
+      return yargs
+      .positional('environmentName', {
+        type: 'string',
+        required: true,
+        describe: 'environment to update'
+      })
+    }, handleDnsUpdate)
   .argv;
 }
 
@@ -199,6 +208,18 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
       });
       return lastPromise;
     })
+}
+
+function handleDnsUpdate(args: {environmentName: string}): Promise<any> {
+  let environmentDefinition: IEnvironmentDefinition = undefined;
+  let dropletManager = new DropletManager();
+  let dnsManager = new DNSManager();
+
+  return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
+    .then((env) => {environmentDefinition = env; })
+    .then(() => dropletManager.getDroplet(environmentDefinition.dropletName))
+    .then((d) => { if (!d) { throw new Error(`Could not load droplet ${environmentDefinition.dropletName}`); } return d; })
+    .then((d) => createDNS(dropletManager, dnsManager, environmentDefinition, d))
 }
 
 processArgs();
