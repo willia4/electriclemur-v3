@@ -11,3 +11,14 @@ export function readFileAsync(fullPath: string): Promise<string> {
     });
   }))
 }
+
+export function listFilesAsync(fullPath: string): Promise<string[]> {
+  return new Promise<string[]>((resolve, reject) => {
+    fs.readdir(fullPath, (err, files) => {
+      if (err) { 
+        return reject(err);
+      }
+      return resolve(files);
+    })
+  });
+}

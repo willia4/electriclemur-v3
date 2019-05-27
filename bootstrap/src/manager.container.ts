@@ -94,6 +94,13 @@ export class ContainerManager {
     }
   }
 
+  static getAvailableContainerDefinitions(): Promise<string[]> {
+    const definitionsPath = path.normalize(path.join(path.normalize(__dirname), `../../containers/`))
+
+    return common.listFilesAsync(definitionsPath)
+      .then((files) => files.map(f => f.replace(/\.json$/, '')));
+  }
+
   static makeSFTPContainerDefinition(webDefinition: IContainerDefinition): IContainerDefinition {
     if (!webDefinition.sftp) { return undefined; }
 
