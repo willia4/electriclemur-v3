@@ -12,7 +12,7 @@
     ],
 
     "sftp": {
-      "hostPort": 1337,
+      "hostPort": 1400,
       "volumeType": "crowglassdesign_com"
     }
   }

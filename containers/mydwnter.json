@@ -1,0 +1,19 @@
+[
+  {
+    "name": "mydwynter",
+    "image": "willia4/nginx_static_php:3.0.1",
+    "hostRoute": "mydwynter",
+    
+    "volumes": [
+      {
+        "type": "mydwynter_com",
+        "mountPoint": "/var/www"
+      }
+    ],
+
+    "sftp": {
+      "hostPort": 1338,
+      "volumeType": "mydwynter_com"
+    }
+  }
+]

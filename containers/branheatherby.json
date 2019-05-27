@@ -1,0 +1,19 @@
+[
+  {
+    "name": "branheatherby",
+    "image": "willia4/nginx_static_php:3.0.1",
+    "hostRoute": "branheatherby",
+    
+    "volumes": [
+      {
+        "type": "branheatherby_com",
+        "mountPoint": "/var/www"
+      }
+    ],
+
+    "sftp": {
+      "hostPort": 1337,
+      "volumeType": "branheatherby_com"
+    }
+  }
+]
