@@ -1,9 +1,0 @@
-version: '3'
-
-services:
-  unread:
-    image: willia4/unread:1.0.1.2
-    labels:
-      - "traefik.frontend.rule=Host: %%JAMESWILLIAMS-BASE-HOST%%; PathPrefixStrip: /unread"
-    env_file: 
-      - ./secrets/%%ENVIRONMENT%%/docker_environment_files/unread.env
