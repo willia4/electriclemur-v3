@@ -1,0 +1,19 @@
+[
+  {
+    "name": "dalhraidia",
+    "image": "willia4/nginx_static_php:3.0.1",
+    "hostRoute": "dalhraidia",
+    
+    "volumes": [
+      {
+        "type": "dalhraidia_com",
+        "mountPoint": "/var/www"
+      }
+    ],
+
+    "sftp": {
+      "hostPort": 1402,
+      "volumeType": "dalhraidia_com"
+    }
+  }
+]

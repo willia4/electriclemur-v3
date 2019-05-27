@@ -10,7 +10,8 @@
       "branheatherby.staging.electriclemur.com",
       "mydwynter.staging.electriclemur.com",
       "mydwynterstudios.staging.electriclemur.com",
-      "mydwyntertea.staging.electriclemur.com"
+      "mydwyntertea.staging.electriclemur.com",
+      "dalhraidia.staging.electriclemur.com"
     ],
   "urlMap": 
     {
@@ -21,6 +22,7 @@
       "branheatherby": "branheatherby.staging.electriclemur.com",
       "mydwynter": "mydwynter.staging.electriclemur.com",
       "mydwynterstudios": "mydwynterstudios.staging.electriclemur.com",
-      "mydwyntertea": "mydwyntertea.staging.electriclemur.com"
+      "mydwyntertea": "mydwyntertea.staging.electriclemur.com",
+      "dalhraidia": "dalhraidia.staging.electriclemur.com"
     }
 }

@@ -79,3 +79,8 @@
 
   - name: Restore crowglassdesign.com volume files from backup
     shell: "docker run --rm -v '{{ vol_crowglassdesign_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"
+
+  ############ dalhraidia.com volume 
+
+  - name: Restore dalhraidia.com volume files from backup
+    shell: "docker run --rm -v '{{ vol_dalhraidia_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/dalhraidia.com' /v"
