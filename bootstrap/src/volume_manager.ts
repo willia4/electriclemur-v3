@@ -13,8 +13,7 @@ export interface IVolume {
 }
 
 export interface IVolumeDefinition {
-  name: string,
-  owner?: string
+  name: string
 }
 
 export class VolumeManager {
@@ -82,8 +81,7 @@ export class VolumeManager {
   }
 
   public getOrCreateVolumeForDefinition(volumeDefinition: IVolumeDefinition): Promise<IVolume> {
-    return this.getOrCreateVolume(volumeDefinition.name)
-      .then((volume) => this.setVolumePermissions(volume, volumeDefinition));
+    return this.getOrCreateVolume(volumeDefinition.name);
   }
 
   public getOrCreateVolume(volumeType: string): Promise<IVolume> {
@@ -106,22 +104,5 @@ export class VolumeManager {
   
     return common.readFileAsync(definitionPath)
       .then((contents) => (JSON.parse(contents) as IVolumeDefinition[]))
-  }
-
-  public setVolumePermissions(volume: IVolume, definition: IVolumeDefinition): Promise<IVolume> {
-    if (!volume || !definition || !definition.owner) { return Promise.resolve(volume); }
-
-    return DockerRunner.MakeRunner(this.environment)
-      .then((runner) => {
-        runner
-          .arg("run")
-          .arg("--rm")
-          .arg(`--volume ${volume.Name}:/vol`)
-          .arg("ubuntu")
-          .arg("bash -c")
-          .arg(`"chown ${definition.owner} /vol"`)
-          .exec();
-      })
-      .then(() => volume);
   }
 }

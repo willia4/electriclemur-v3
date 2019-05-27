@@ -3,19 +3,6 @@
   name: Init Host
 
   tasks:
-  - name: Create www-data group
-    group:
-      name: www-data
-      gid: 33
-      state: present
-
-  - name: Create www-data user
-    user:
-      name: www-data
-      group: www-data
-      uid: 33
-      state: present
-
   - name: Determine if server cert directory exists
     stat: path=/etc/docker_certs
     register: docker_certs_stat 

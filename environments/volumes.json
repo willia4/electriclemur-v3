@@ -3,9 +3,9 @@
     { "name": "database_backup" },
     { "name": "ssh_key" },
     { "name": "ssh_user" },
-    { "name": "branheatherby_com", "owner": "www-data:www-data"},
-    { "name": "mydwynter_com", "owner": "www-data:www-data"},
-    { "name": "mydwynterstudios_com", "owner": "www-data:www-data"},
-    { "name": "mydwyntertea_com", "owner": "www-data:www-data"},
-    { "name": "crowglassdesign_com", "owner": "www-data:www-data"}
+    { "name": "branheatherby_com"},
+    { "name": "mydwynter_com"},
+    { "name": "mydwynterstudios_com"},
+    { "name": "mydwyntertea_com"},
+    { "name": "crowglassdesign_com"}
 ]

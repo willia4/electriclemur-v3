@@ -58,69 +58,24 @@
   ############ branheatherby.com volume 
 
   - name: Restore branheatherby.com volume files from backup
-    shell: "docker run --rm -u xfs -v '{{ vol_branheatherby_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/branheatherby.com' /v"
-    
-  - name: Set permissions on branheatherby.com volume 
-    file:
-      path: "{{ vol_branheatherby_com_mount }}"
-      state: directory
-      recurse: yes
-      group: www-data
-      owner: www-data
-      mode: 0777
+    shell: "docker run --rm -v '{{ vol_branheatherby_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/branheatherby.com' /v"
 
   ############ mydwynter.com volume 
 
   - name: Restore mydwynter.com volume files from backup
-    shell: "docker run --rm -u xfs -v '{{ vol_mydwynter_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynter.com' /v"
-
-  - name: Set permissions on mydwynter.com volume
-    file:
-      path: "{{ vol_mydwynter_com_mount }}"
-      state: directory
-      recurse: yes
-      group: www-data
-      owner: www-data
-      mode: 0777
+    shell: "docker run --rm -v '{{ vol_mydwynter_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynter.com' /v"
 
   ############ mydwynterstudios.com volume 
 
   - name: Restore mydwynterstudios.com volume files from backup
-    shell: "docker run --rm -u xfs -v '{{ vol_mydwynterstudios_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynterstudios.com' /v"
-
-  - name: Set permissions on mydwynterstudios.com volume
-    file:
-      path: "{{ vol_mydwynterstudios_com_mount }}"
-      state: directory
-      recurse: yes
-      group: www-data
-      owner: www-data
-      mode: 0777
+    shell: "docker run --rm -v '{{ vol_mydwynterstudios_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwynterstudios.com' /v"
 
   ############ mydwyntertea.com volume 
 
   - name: Restore mydwyntertea.com volume files from backup
-    shell: "docker run --rm -u xfs -v '{{ vol_mydwyntertea_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwyntertea.com' /v"
-
-  - name: Set permissions on mydwyntertea.com volume
-    file:
-      path: "{{ vol_mydwyntertea_com_mount }}"
-      state: directory
-      recurse: yes
-      group: www-data
-      owner: www-data
-      mode: 0777
+    shell: "docker run --rm -v '{{ vol_mydwyntertea_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/mydwyntertea.com' /v"
 
   ############ crowglassdesign.com volume 
 
   - name: Restore crowglassdesign.com volume files from backup
-    shell: "docker run --rm -u xfs -v '{{ vol_crowglassdesign_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"
-
-  - name: Set permissions on crowglassdesign.com volume
-    file:
-      path: "{{ vol_crowglassdesign_com_mount }}"
-      state: directory
-      recurse: yes
-      group: www-data
-      owner: www-data
-      mode: 0777
+    shell: "docker run --rm -v '{{ vol_crowglassdesign_com_id }}:/v' -e AWS_ACCESS_KEY_ID='{{aws_access_key}}' -e AWS_SECRET_ACCESS_KEY='{{aws_access_secret}}' willia4/aws_cli aws s3 sync --delete 's3://com.electriclemur.staticfiles/crowglassdesign.com' /v"

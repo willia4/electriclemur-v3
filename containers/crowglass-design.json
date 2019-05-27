@@ -3,7 +3,6 @@
     "name": "crowglass-design",
     "image": "willia4/nginx_static_php:3.0.1",
     "hostRoute": "wishlist.jameswilliams.staging.electriclemur.com",
-    "user": "www-data",
     
     "volumes": [
       {
@@ -15,7 +14,7 @@
 
   {
     "name": "crowglass-design-sftp",
-    "image": "willia4/sftp_volume:1.2.0",
+    "image": "willia4/sftp_volume:1.4.0",
 
     "volumes": [
       {
@@ -40,10 +39,10 @@
     ],
     
     "env": {
-      "SFTP_CONTAINER_GROUP": "www-data",
-      "SFTP_CONTAINER_GROUP_ID": "33",
-      "SFTP_CONTAINER_USER": "www-data",
-      "SFTP_CONTAINER_USER_ID": "33"
+      "SFTP_CONTAINER_GROUP": "root",
+      "SFTP_CONTAINER_GROUP_ID": "0",
+      "SFTP_CONTAINER_USER": "root",
+      "SFTP_CONTAINER_USER_ID": "0"
     }
   }
 ]

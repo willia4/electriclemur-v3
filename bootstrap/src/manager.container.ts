@@ -20,7 +20,6 @@ export interface IContainerDefinition {
 
   hostRoute?: string;
   pathRoute?: string;
-  user?: string;
 
   volumes?: IContainerDefinitionVolume[];
   ports?: IContainerDefinitionPort[];
@@ -199,7 +198,6 @@ export class ContainerManager {
         .then((runner) => this.runner_addVolumes(runner, def))
         .then((runner) => this.runner_addPorts(runner, def))
         .then((runner) => this.runner_addEnvironmentVariables(runner, def))
-        .then((runner) => this.runner_addUser(runner, def))
 
         // Add image at end of command line
         .then((runner) => { 
@@ -223,14 +221,6 @@ export class ContainerManager {
 
         return lastPromise.then(() => results);
       })
-  }
-
-  private runner_addUser(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
-    if (def.user) {
-      runner.arg(`-u "${def.user}"`);
-    }
-
-    return Promise.resolve(runner);
   }
 
   private runner_addLabels(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
