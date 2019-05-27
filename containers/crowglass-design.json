@@ -9,40 +9,11 @@
         "type": "crowglassdesign_com",
         "mountPoint": "/var/www"
       }
-    ]
-  },
-
-  {
-    "name": "crowglass-design-sftp",
-    "image": "willia4/sftp_volume:1.4.0",
-
-    "volumes": [
-      {
-        "type": "crowglassdesign_com",
-        "mountPoint": "/volumes/sftp_root/www"
-      },
-      {
-        "type": "ssh_key",
-        "mountPoint": "/volumes/ssh_keys"
-      },
-      {
-        "type": "ssh_user",
-        "mountPoint": "/volumes/user"
-      }
     ],
 
-    "ports": [
-      {
-        "containerPort": 22,
-        "hostPort": 1337
-      }
-    ],
-    
-    "env": {
-      "SFTP_CONTAINER_GROUP": "root",
-      "SFTP_CONTAINER_GROUP_ID": "0",
-      "SFTP_CONTAINER_USER": "root",
-      "SFTP_CONTAINER_USER_ID": "0"
+    "sftp": {
+      "hostPort": 1337,
+      "volumeType": "crowglassdesign_com"
     }
   }
 ]

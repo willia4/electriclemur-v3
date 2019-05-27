@@ -24,6 +24,11 @@ export interface IContainerDefinition {
   volumes?: IContainerDefinitionVolume[];
   ports?: IContainerDefinitionPort[];
   env?: { [key: string]: string };
+
+  sftp?: {
+    hostPort: number;
+    volumeType: string;
+  }
 }
 
 export interface IContainer {
@@ -75,14 +80,43 @@ export class ContainerManager {
       return common.readFileAsync(definitionPath)
         .then((contents) => {
           let data = JSON.parse(contents);
+          let containerDefs: IContainerDefinition[] = [];
           if (Array.isArray(data)) {
-            return data as IContainerDefinition[];
+            containerDefs = data as IContainerDefinition[];
           }
           else {
-            return [data as IContainerDefinition];
+            containerDefs = [data as IContainerDefinition];
           }
+
+          let sftpContainers = containerDefs.map(d => this.makeSFTPContainerDefinition(d)).filter(d => !!d);
+          return containerDefs.concat(sftpContainers);
         });
     }
+  }
+
+  static makeSFTPContainerDefinition(webDefinition: IContainerDefinition): IContainerDefinition {
+    if (!webDefinition.sftp) { return undefined; }
+
+    let r: IContainerDefinition = {
+      name: `${webDefinition.name}-sftp`,
+      image: "willia4/sftp_volume:1.4.0",
+      volumes: [
+          { type: "ssh_key", mountPoint: "/volumes/ssh_keys" },
+          { type: "ssh_user", mountPoint: "/volumes/user" },
+          { type: webDefinition.sftp.volumeType, mountPoint: "/volumes/sftp_root/www" }
+      ],
+      ports: [
+        { containerPort: 22, hostPort: webDefinition.sftp.hostPort }
+      ],
+      env: {
+        SFTP_CONTAINER_GROUP: "root",
+        SFTP_CONTAINER_GROUP_ID: "0",
+        SFTP_CONTAINER_USER: "root",
+        SFTP_CONTAINER_USER_ID: "0"
+      }
+    }
+
+    return r;
   }
 
   static get TraefikProxyName(): string { return 'traefik_proxy'};
@@ -277,4 +311,5 @@ export class ContainerManager {
 
     return Promise.resolve(runner);
   }
+
 }
