@@ -2,7 +2,7 @@
   {
     "name": "crowglass-design",
     "image": "willia4/nginx_static_php:3.0.1",
-    "hostRoute": "wishlist.jameswilliams.staging.electriclemur.com",
+    "hostRoute": "crowglass-design",
     
     "volumes": [
       {

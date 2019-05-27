@@ -228,7 +228,7 @@ export class ContainerManager {
             .arg(`--name ${def.name}`)
         })
 
-        .then((runner) => this.runner_addLabels(runner, def))
+        .then((runner) => this.runner_addLabels(runner, environment, def))
         .then((runner) => this.runner_addVolumes(runner, def))
         .then((runner) => this.runner_addPorts(runner, def))
         .then((runner) => this.runner_addEnvironmentVariables(runner, def))
@@ -257,9 +257,14 @@ export class ContainerManager {
       })
   }
 
-  private runner_addLabels(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
+  private runner_addLabels(runner: DockerRunner, environment: IEnvironmentDefinition, def: IContainerDefinition): Promise<DockerRunner> {
     if (def.hostRoute) {
-      let rule = `Host: ${def.hostRoute}`;
+      let hostRule = def.hostRoute;
+      if (environment.urlMap.hasOwnProperty(hostRule)) {
+        hostRule = environment.urlMap[hostRule];
+      }
+
+      let rule = `Host: ${hostRule}`;
       
       if (def.pathRoute) {
         rule = `${rule}; PathPrefixStrip: ${def.pathRoute}`;

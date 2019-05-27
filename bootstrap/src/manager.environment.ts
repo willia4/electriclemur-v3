@@ -5,7 +5,7 @@ interface IEnvironmentDefinition_JSON {
   environmentName: string,
   dropletName: string,
   domainNames: string[],
-  urlMap: {key: string, value: string}[]
+  urlMap: {key: string, value: string}
 }
 
 export interface IEnvironmentDefinition extends IEnvironmentDefinition_JSON {

@@ -4,10 +4,23 @@
   "domainNames": [
       "staging.electriclemur.com",
       "jameswilliams.staging.electriclemur.com",
-      "wishlist.jameswilliams.staging.electriclemur.com"
+      "wishlist.jameswilliams.staging.electriclemur.com",
+      "crowglassdesign.staging.electriclemur.com",
+      "crowglass.staging.electriclemur.com",
+      "branheatherby.staging.electriclemur.com",
+      "mydwynter.staging.electriclemur.com",
+      "mydwynterstudios.staging.electriclemur.com",
+      "mydwyntertea.staging.electriclemur.com"
     ],
   "urlMap": 
-    [
-      { "key": "%%JAMESWILLIAMS-BASE-HOST%%", "value": "jameswilliams.staging.electriclemur.com" }
-    ]
+    {
+      "jameswilliams-base": "jameswilliams.staging.electriclemur.com",
+      "jameswilliams-wishlist": "wishlist.jameswilliams.staging.electriclemur.com",
+      "crowglass-design": "crowglassdesign.staging.electriclemur.com",
+      "crowglass": "crowglass.staging.electriclemur.com",
+      "branheatherby": "branheatherby.staging.electriclemur.com",
+      "mydwynter": "mydwynter.staging.electriclemur.com",
+      "mydwynterstudios": "mydwynterstudios.staging.electriclemur.com",
+      "mydwyntertea": "mydwyntertea.staging.electriclemur.com"
+    }
 }
