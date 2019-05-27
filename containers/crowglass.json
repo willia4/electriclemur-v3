@@ -1,0 +1,11 @@
+[
+  {
+    "name": "crowglass-design",
+    "image": "morbz/docker-web-redirect",
+    "hostRoute": "crowglass",
+
+    "env": {
+      "REDIRECT_TARGET": "crowglassdesign.com"
+    }
+  }
+]
