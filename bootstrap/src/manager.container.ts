@@ -163,6 +163,7 @@ export class ContainerManager {
             return runner
               .arg('run')
               .arg('-d')
+              .arg('--restart always')
               .arg('-p 8080:8080')
               .arg('-p 80:80')
               .arg('-v /var/run/docker.sock:/var/run/docker.sock')
@@ -232,6 +233,7 @@ export class ContainerManager {
           return runner
             .arg('run')
             .arg('-d')
+            .arg('--restart always')
             .arg(`--name ${def.name}`)
         })
 
