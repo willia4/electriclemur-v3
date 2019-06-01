@@ -68,7 +68,7 @@ export class DNSManager {
   public createOrUpdateDNSARecord(fqdn: string, ipAddress: string): Promise<IDNSRecord> {
     const parsed = this.parseDomain(fqdn);
   
-    function _createDNSARecord(zone: string, recordName: string, ipAddress: string): Promise<IDNSRecord> {
+    let _createDNSARecord = (zone: string, recordName: string, ipAddress: string): Promise<IDNSRecord> => {
       if (!recordName) { throw `Cannot create new A record for ${zone} zone. Create this in the portal.`}
   
       return DigitalOceanRunner.MakeRunner(this.verbose)
@@ -87,7 +87,7 @@ export class DNSManager {
         });
     }
   
-    function _updateDNSARecord(recordId: number, zone: string, ipAddress: string): Promise<IDNSRecord> {
+    let _updateDNSARecord = (recordId: number, zone: string, ipAddress: string): Promise<IDNSRecord> => {
       return DigitalOceanRunner.MakeRunner(this.verbose)
         .then(runner => {
           return runner
