@@ -21,6 +21,23 @@ function getApiKey(): Promise<string> {
   return Promise.resolve(data['access-token']);
 }
 
+interface ICreateArgs {
+  environmentName: string;
+  skipDNS: boolean;
+  skipInit: boolean;
+  skipVolumes: boolean;
+  verbose: boolean;
+}
+
+interface IDeleteArgs {
+  environmentName: string;
+  verbose: boolean;
+}
+
+interface IUpdateDNSArgs {
+  environmentName: string;
+  verbose: boolean;
+}
 function processArgs() {
   return yargs
     .command('create <environmentName>', 'create an environment', (yargs) => {
@@ -29,6 +46,22 @@ function processArgs() {
           type: 'string',
           required: true,
           describe: 'environment to create'
+        })
+        .option('skipDNS', {
+          type: 'boolean',
+          default: false
+        })
+        .option('skipInit', {
+          type: 'boolean',
+          default: false
+        })
+        .option('skipVolumes', {
+          type: 'boolean',
+          default: false
+        })
+        .option('verbose', {
+          type: 'boolean',
+          default: false
         })
     }, handleCreate)
 
@@ -39,6 +72,10 @@ function processArgs() {
         required: true,
         describe: 'environment to delete'
       })
+      .option('verbose', {
+        type: 'boolean',
+        default: false
+      })
     }, handleDelete)
 
     .command('update-dns <environmentName>', 'update the DNS records for an environment', (yargs) => {
@@ -47,6 +84,10 @@ function processArgs() {
         type: 'string',
         required: true,
         describe: 'environment to update'
+      })
+      .option('verbose', {
+        type: 'boolean',
+        default: false
       })
     }, handleDnsUpdate)
   .argv;
@@ -89,11 +130,13 @@ function createDroplet(dropletManager: DropletManager, environment: IEnvironment
     });
 }
 
-function createDockerCerts(environment: IEnvironmentDefinition): Promise<any> {
+function createDockerCerts(environment: IEnvironmentDefinition, verbose: boolean): Promise<any> {
   return ScriptRunner.MakeRunner()
     .then((runner) => {
+      runner.echoOutput = verbose;
+
       let scriptPath = path.normalize(path.join(path.normalize(__dirname), '../make-docker-certs.sh'))
-      return runner.exec(`${scriptPath} ${environment.environmentName}`, true);
+      return runner.exec(`${scriptPath} ${environment.environmentName}`);
     })
 }
 
@@ -115,12 +158,15 @@ function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, envir
   return lastPromise.then(() => droplet);
 }
 
-function handleCreate(args: {environmentName: string}): Promise<any> {
+function handleCreate(args: ICreateArgs): Promise<any> {
 
   let definition: IEnvironmentDefinition = undefined;
 
   let dropletManager = new DropletManager();
   let dnsManager = new DNSManager();
+
+  dropletManager.verbose = args.verbose;
+  dnsManager.verbose = args.verbose;
 
   return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
@@ -130,10 +176,22 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     })
     .then((d) => { definition = d; })
     .then(() => createDroplet(dropletManager, definition))
-    .then((droplet) => createDNS(dropletManager, dnsManager, definition, droplet))
-    .then(() => createDockerCerts(definition))
-    .then(() => AnsibleRunner.RunPlaybook(definition, "init-host"))
-    .then(() => AnsibleRunner.RunPlaybook(definition, "upload-files"))
+    .then((droplet) => {
+      if (!args.skipDNS) { 
+        return createDNS(dropletManager, dnsManager, definition, droplet)
+          .then(() => createDockerCerts(definition, args.verbose)) // DNS is required for everything else
+          .then(() => {
+            if (!args.skipInit) { return AnsibleRunner.RunPlaybook(definition, "init-host", args.verbose); }
+            return Promise.resolve();
+          })
+          .then(() => {
+            if (!args.skipVolumes) { return AnsibleRunner.RunPlaybook(definition, "upload-files", args.verbose); }
+            return Promise.resolve();
+          });
+      }
+
+      return Promise.resolve(undefined);
+    })    
     .catch((err) => {
       console.error(`Error:`)
       console.error(err);
@@ -141,12 +199,15 @@ function handleCreate(args: {environmentName: string}): Promise<any> {
     });
 }
 
-function handleDelete(args: {environmentName: string}): Promise<any> {
+function handleDelete(args: IDeleteArgs): Promise<any> {
   let deleteActions: (() => Promise<any>)[] = [];
   let definition: IEnvironmentDefinition = undefined;
 
   let dropletManager = new DropletManager();
   let dnsManager = new DNSManager();
+
+  dropletManager.verbose = args.verbose;
+  dnsManager.verbose = args.verbose;
 
   return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .catch((err: Error) => {
@@ -210,11 +271,14 @@ function handleDelete(args: {environmentName: string}): Promise<any> {
     })
 }
 
-function handleDnsUpdate(args: {environmentName: string}): Promise<any> {
+function handleDnsUpdate(args: IUpdateDNSArgs): Promise<any> {
   let environmentDefinition: IEnvironmentDefinition = undefined;
   let dropletManager = new DropletManager();
   let dnsManager = new DNSManager();
 
+  dropletManager.verbose = args.verbose;
+  dnsManager.verbose = args.verbose;
+  
   return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .then((env) => {environmentDefinition = env; })
     .then(() => dropletManager.getDroplet(environmentDefinition.dropletName))

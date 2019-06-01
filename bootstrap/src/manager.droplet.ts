@@ -28,9 +28,10 @@ export interface IDroplet {
 }
 
 export class DropletManager {
+  public verbose: boolean = false;
 
   public getDroplets(): Promise<IDroplet[]> {
-    return DigitalOceanRunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner(this.verbose)
       .then((runner) => {
         return runner
             .arg('compute droplet list')
@@ -53,7 +54,7 @@ export class DropletManager {
   }
 
   public createDroplet(name: string): Promise<IDroplet> {
-    return DigitalOceanRunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner(this.verbose)
       .then((runner) => {
         return runner
           .arg(`compute droplet create ${name}`)
@@ -73,7 +74,7 @@ export class DropletManager {
   }
 
   public deleteDroplet(droplet: IDroplet): Promise<void> {
-    return DigitalOceanRunner.MakeRunner()
+    return DigitalOceanRunner.MakeRunner(this.verbose)
       .then((runner) => {
         console.log(`Deleting droplet ${droplet.name} (${droplet.id})`);
         return runner

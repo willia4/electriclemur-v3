@@ -5,6 +5,8 @@ export class RunnerBase {
   private _cmd: string = undefined;
   private _args: string[] = [];
 
+  public echoOutput: boolean = false;
+
   public constructor(cmd) {
     this._cmd = cmd;
   }
@@ -18,16 +20,31 @@ export class RunnerBase {
     return new Promise((resolve, reject) => {
       let fullCommand = this._cmd;
 
+      if (this.echoOutput) {
+        console.log(fullCommand);
+        console.log(this._args);
+      }
+
       let p = child.spawn(fullCommand, this._args);
       let stdErr = '';
       let stdOut = '';
 
-      p.stderr.on('data', (data: Buffer) => { stdErr += data.toString(); });
-      p.stdout.on('data', (data: Buffer) => { stdOut += data.toString(); });
+      p.stderr.on('data', (data: Buffer) => { 
+        let d = data.toString();
+        if (this.echoOutput) { console.error(d); }
+        stdErr += d; 
+      });
+
+      p.stdout.on('data', (data: Buffer) => { 
+        let d = data.toString();
+        if (this.echoOutput) { console.log(d); }
+        stdOut += d; 
+      });
 
       p.on('error', (err) => {
         stdErr += err.message;
-        reject(err);
+        stdErr = stdOut + stdErr;
+        reject(stdErr);
         return;
       });
 
@@ -36,7 +53,9 @@ export class RunnerBase {
           resolve(stdOut);
         }
         else {
-          reject(stdErr);
+          let err = stdOut;
+          err = `${err}\n\n(exit) Return code: ${code}\n\n${stdErr}`
+          reject(err);
         }
         return;
       });
@@ -46,7 +65,9 @@ export class RunnerBase {
           resolve(stdOut);
         }
         else {
-          reject(stdErr);
+          let err = stdOut;
+          err = `${err}\n\n(close) Return code: ${code}\n\n${stdErr}`
+          reject(err);
         }
         return;
       });

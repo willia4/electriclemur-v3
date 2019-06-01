@@ -7,7 +7,7 @@ import { ScriptRunner } from './script_runner';
 export type PlaybooksT = "init-host" | "upload-files";
 
 export class AnsibleRunner {
-  static RunPlaybook(environment: IEnvironmentDefinition, playbook: PlaybooksT): Promise<void> {
+  static RunPlaybook(environment: IEnvironmentDefinition, playbook: PlaybooksT, verbose: boolean = false): Promise<void> {
     const ansiblePath = path.normalize(path.join(path.normalize(__dirname), '../ansible'));
 
     const skipVolumes = (playbook === "init-host");
@@ -17,8 +17,12 @@ export class AnsibleRunner {
     const playbookPath = path.join(ansiblePath, `${playbook}.yaml`);
 
     let runner = new AnsibleRunner('/usr/bin/ansible-playbook', inventoryPath, playbookPath);
+    runner.verbose = verbose;
+
     return runner.exec().then(() => {});
   }
+
+  public verbose: boolean = false; 
 
   private constructor(
     private _ansiblePath: string,
@@ -31,8 +35,10 @@ export class AnsibleRunner {
 
     return ScriptRunner.MakeRunner()
       .then((scriptRunner) => {
+        scriptRunner.echoOutput = this.verbose;
+
         scriptRunner.setEnvironmentVariable('ANSIBLE_HOST_KEY_CHECKING', 'False');
-        return scriptRunner.exec(fullCommand, true);
+        return scriptRunner.exec(fullCommand);
       });
   }
 }

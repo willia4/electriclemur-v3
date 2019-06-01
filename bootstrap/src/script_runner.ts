@@ -7,6 +7,7 @@ export class ScriptRunner {
 
   private _environment: NodeJS.ProcessEnv = {};
   public shell: string = '/bin/bash';
+  public echoOutput: boolean = false;
 
   constructor() {
     for(let e in process.env) {
@@ -24,8 +25,12 @@ export class ScriptRunner {
     delete this._environment[key];
   }
 
-  public exec(cmd: string, echoOutput: boolean = false): Promise<string> {
+  public exec(cmd: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
+      if (this.echoOutput) {
+        console.log(cmd);
+      }
+
       let p = child.exec(cmd, {
         shell: this.shell,
         env: this._environment
@@ -34,12 +39,12 @@ export class ScriptRunner {
       let stdErr = '';
       let stdOut = '';
       p.stderr.on('data', (data: Buffer) => {
-        if (echoOutput) { console.error(data.toString()); }
+        if (this.echoOutput) { console.error(data.toString()); }
         stdErr += data.toString();
       })
 
       p.stdout.on('data', (data: Buffer) => {
-        if (echoOutput) { console.log(data.toString()); }
+        if (this.echoOutput) { console.log(data.toString()); }
         stdOut += data.toString();
       });
 
