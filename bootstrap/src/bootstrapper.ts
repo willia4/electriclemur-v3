@@ -8,6 +8,7 @@ import * as path from 'path';
 
 import * as inquirer from 'inquirer';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
+import * as ansible from './ansible_commands';
 import { AnsibleRunner } from './ansible_runner';
 import { ScriptRunner } from './script_runner';
 
@@ -131,6 +132,7 @@ function createDroplet(dropletManager: DropletManager, environment: IEnvironment
 }
 
 function createDockerCerts(environment: IEnvironmentDefinition, verbose: boolean): Promise<any> {
+  console.log(`Creating docker certs`)
   return ScriptRunner.MakeRunner()
     .then((runner) => {
       runner.echoOutput = verbose;
@@ -138,6 +140,37 @@ function createDockerCerts(environment: IEnvironmentDefinition, verbose: boolean
       let scriptPath = path.normalize(path.join(path.normalize(__dirname), '../make-docker-certs.sh'))
       return runner.exec(`${scriptPath} ${environment.environmentName}`);
     })
+    .then(() => console.log(`Done creating docker certs`));
+}
+
+function initDockerOnHost(environment: IEnvironmentDefinition, verbose: boolean): Promise<any> {
+  const hostCertsDirectory = '/etc/docker_certs';
+
+  return createDockerCerts(environment, verbose)
+    .then(() => ansible.createDirectory(environment, hostCertsDirectory, verbose))
+    .then(() => {
+      let files = [
+        `${environment.secretPath}/docker_certs/ca.pem`,
+        `${environment.secretPath}/docker_certs/${environment.fqdn}/server-cert.pem`,
+        `${environment.secretPath}/docker_certs/${environment.fqdn}/server-key.pem`
+      ];
+
+      return ansible.uploadFiles(environment, files, hostCertsDirectory, verbose)
+    })
+    .then(() => ansible.removeLineFromFile(
+      environment,
+      '/etc/sysconfig/docker',
+      '^OPTIONS',
+      verbose
+    ))
+    .then(() => ansible.addLineToFile(
+      environment,
+      '/etc/sysconfig/docker',
+      '\"OPTIONS=\'--selinux-enabled --log-driver=journald --tlsverify --tlscacert=/etc/docker_certs/ca.pem --tlscert=/etc/docker_certs/server-cert.pem --tlskey=/etc/docker_certs/server-key.pem -H=0.0.0.0:2376 -H=unix:///var/run/docker.sock\'\"',
+      verbose
+    ))
+    .then(() => ansible.runCommand(environment, 'systemctl daemon-reload', verbose))
+    .then(() => ansible.runCommand(environment, 'systemctl restart docker.service', verbose));
 }
 
 function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, environment: IEnvironmentDefinition, droplet: IDroplet): Promise<IDroplet> {
@@ -159,7 +192,6 @@ function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, envir
 }
 
 function handleCreate(args: ICreateArgs): Promise<any> {
-
   let definition: IEnvironmentDefinition = undefined;
 
   let dropletManager = new DropletManager();
@@ -179,12 +211,13 @@ function handleCreate(args: ICreateArgs): Promise<any> {
     .then((droplet) => {
       if (!args.skipDNS) { 
         return createDNS(dropletManager, dnsManager, definition, droplet)
-          .then(() => createDockerCerts(definition, args.verbose)) // DNS is required for everything else
+          // DNS is required for everything else so only do the rest after doing createDNS
           .then(() => {
-            if (!args.skipInit) { return AnsibleRunner.RunPlaybook(definition, "init-host", args.verbose); }
-            return Promise.resolve();
+            if (!args.skipInit) { return initDockerOnHost(definition, args.verbose); }
+            return Promise.resolve();            
           })
           .then(() => {
+            console.log('Uploading volume data')
             if (!args.skipVolumes) { return AnsibleRunner.RunPlaybook(definition, "upload-files", args.verbose); }
             return Promise.resolve();
           });
