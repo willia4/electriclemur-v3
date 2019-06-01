@@ -1,6 +1,17 @@
 {
   "cSpell.words": [
+    "Ansible",
+    "DNSA",
+    "IDNS",
     "Mountpoint",
-    "Traefik"
+    "Traefik",
+    "doctl",
+    "subdomain",
+    "tlscacert",
+    "tlscert",
+    "tlskey",
+    "tlsverify",
+    "vcpu",
+    "vcpus"
   ]
 }
