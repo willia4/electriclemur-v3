@@ -34,7 +34,7 @@ export function uploadFile(environment: IEnvironmentDefinition, src: string, des
   let cmd = new CopyCommand(src, dest);
   return AnsibleRunner.RunCommand<CopyCommand, ICopyResult>(environment, cmd, verbose)
     .then((result) => {
-      console.log(`Uploaded ${result.dest}: ${result.checksum}`);
+      if (verbose) { console.log(`Uploaded ${result.dest}: ${result.checksum}`); }
       return result;
     })
 }

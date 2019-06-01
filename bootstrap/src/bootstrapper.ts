@@ -173,7 +173,7 @@ function initDockerOnHost(environment: IEnvironmentDefinition, verbose: boolean)
     .then(() => ansible.runCommand(environment, 'systemctl restart docker.service', verbose));
 }
 
-function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, environment: IEnvironmentDefinition, droplet: IDroplet): Promise<IDroplet> {
+function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, environment: IEnvironmentDefinition, droplet: IDroplet, verbose: boolean = false): Promise<IDroplet> {
   let firstPromise = Promise.resolve();
   let lastPromise: Promise<any> = firstPromise;
 
@@ -183,7 +183,8 @@ function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, envir
       return dnsManager.createOrUpdateDNSARecord(d, dropletIp)
         .then((dns) => {
           console.log(`Created DNS record for ${d}`);
-          console.log(dns);
+          if (verbose) { console.log(dns); }
+          
         });
     });
   });
@@ -210,7 +211,7 @@ function handleCreate(args: ICreateArgs): Promise<any> {
     .then(() => createDroplet(dropletManager, definition))
     .then((droplet) => {
       if (!args.skipDNS) { 
-        return createDNS(dropletManager, dnsManager, definition, droplet)
+        return createDNS(dropletManager, dnsManager, definition, droplet, args.verbose)
           // DNS is required for everything else so only do the rest after doing createDNS
           .then(() => {
             if (!args.skipInit) { return initDockerOnHost(definition, args.verbose); }
