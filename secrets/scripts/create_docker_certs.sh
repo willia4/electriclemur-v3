@@ -33,12 +33,12 @@ function log_info {
     printf "${GREEN_CODE}${TEXT}${NORMAL_CODE}\n"
 }
 
-if [ -z "$CERT_PATH" ]; then
+if [[ -z "$CERT_PATH" ]]; then
     log_error "The first argument to this script must be a path"
     exit 2
 fi
 
-if [ -z "$CERT_HOST" ]; then
+if [[ -z "$CERT_HOST" ]]; then
     log_error "The second argument to this script must be a docker host name"
     exit 3
 fi
@@ -46,23 +46,23 @@ fi
 CA_PATH=$("$READLINK" -f "$CERT_PATH")
 CERT_PATH=$("$READLINK" -f "$CERT_PATH/$CERT_HOST")
 
-if [ -d "$CERT_PATH" ]; then
+if [[ -d "$CERT_PATH" ]]; then
     #this certainly isn't scary at all
     rm -rf "$CERT_PATH"
 fi 
 
-if [ ! -d "$CERT_PATH" ]; then
+if [[ ! -d "$CERT_PATH" ]]; then
     log_info "Trying to create $CERT_PATH"
     mkdir -p "$CERT_PATH"
 
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         log_error "The path '$CERT_PATH' does not exist or is not a directory and could not be created"
         exit 4
     fi
 fi 
 
 CA_EXISTS=0
-if [ -f "$CA_PATH/ca-key.pem" ]; then
+if [[ -f "$CA_PATH/ca-key.pem" ]]; then
     CA_EXISTS=1
 fi 
 
@@ -70,13 +70,13 @@ fi
 log_info "Validating CA infrastructure"
 
 PASSWORD_FILE="$CA_PATH/password.txt"
-if [ ! -f "$PASSWORD_FILE" ]; then
+if [[ ! -f "$PASSWORD_FILE" ]]; then
     log_info "Generating password into $PASSWORD_FILE"
     CERT_PASSWORD="$(openssl rand 32 | shasum -a 256 -b | sed 's/ \*-//g')"
     echo $CERT_PASSWORD > "$PASSWORD_FILE"
 fi 
 
-if [ "$CA_EXISTS" -eq "0" ]; then
+if [[ "$CA_EXISTS" -eq "0" ]]; then
     log_info "The CA does not yet exist; creating it"
 
     log_info "Creating CA private key"
@@ -103,7 +103,7 @@ log_info "Signing server certificate with CA"
 log_info "\tSigning for DNS:$CERT_HOST"
 ALT_NAME="DNS:$CERT_HOST"
 
-if [ ! -z $CERT_PUBLIC_IP ]; then
+if [[ ! -z $CERT_PUBLIC_IP ]]; then
     log_info "\tSigning for IP:$CERT_PUBLIC_IP"
     ALT_NAME="${ALT_NAME},IP:$CERT_PUBLIC_IP"
 fi
@@ -147,7 +147,7 @@ log_info "Generating source script"
 SOURCE_SCRIPT_PATH="$CERT_PATH/source_me.sh"
 
 DOCKER_ADDRESS="$CERT_HOST"
-if [ ! -z $CERT_PUBLIC_IP ]; then
+if [[ ! -z $CERT_PUBLIC_IP ]]; then
     DOCKER_ADDRESS="$CERT_PUBLIC_IP"
 fi 
 
