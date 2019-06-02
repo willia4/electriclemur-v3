@@ -14,6 +14,12 @@ export interface IContainerDefinitionPort {
   hostPort: number;
 }
 
+export interface ISecretEnvar {
+  secretName: string
+}
+
+export type envarT = string | ISecretEnvar;
+
 export interface IContainerDefinition {
   name: string;
   image: string;
@@ -23,7 +29,7 @@ export interface IContainerDefinition {
 
   volumes?: IContainerDefinitionVolume[];
   ports?: IContainerDefinitionPort[];
-  env?: { [key: string]: string };
+  env?: { [key: string]: envarT };
 
   sftp?: {
     hostPort: number;
@@ -67,7 +73,9 @@ export interface IContainer {
   }
 }
 export class ContainerManager {
-  static getContainerDefinitions(containerName: string): Promise<IContainerDefinition[]> {
+  static getContainerDefinitions(containerName: string, verbose: boolean): Promise<IContainerDefinition[]> {
+    console.log(`Loading container definition for ${containerName}`);
+
     if (containerName === ContainerManager.TraefikProxyName) {
       let def: IContainerDefinition = {
         name: ContainerManager.TraefikProxyName,
@@ -88,20 +96,39 @@ export class ContainerManager {
             containerDefs = [data as IContainerDefinition];
           }
 
-          let sftpContainers = containerDefs.map(d => this.makeSFTPContainerDefinition(d)).filter(d => !!d);
+          if (verbose) {
+            console.log(`${definitionPath} contained ${containerDefs.length} definitions`);
+          }
+
+          let sftpContainers = containerDefs.map(d => this.makeSFTPContainerDefinition(d, verbose)).filter(d => !!d);
+
+          if (verbose) {
+            console.log(`${containerName} definition wants SFTP container: ${ !!sftpContainers.length }`)
+          }
+
           return containerDefs.concat(sftpContainers);
         });
     }
   }
 
-  static getAvailableContainerDefinitions(): Promise<string[]> {
+  static getAvailableContainerDefinitions(verbose: boolean): Promise<string[]> {
     const definitionsPath = path.normalize(path.join(path.normalize(__dirname), `../../containers/`))
 
+    console.log(`Reading all available containers from ${definitionsPath}`);
+
     return common.listFilesAsync(definitionsPath)
-      .then((files) => files.map(f => f.replace(/\.json$/, '')));
+      .then((files) => files.map(f => f.replace(/\.json$/, '')))
+      .then((names) => {
+        if (verbose) {
+          console.log('Found: ')
+          names.forEach(n => { console.log(`  ${n}`); });
+        }
+
+        return names;
+      })
   }
 
-  static makeSFTPContainerDefinition(webDefinition: IContainerDefinition): IContainerDefinition {
+  static makeSFTPContainerDefinition(webDefinition: IContainerDefinition, verbose: boolean): IContainerDefinition {
     if (!webDefinition.sftp) { return undefined; }
 
     let r: IContainerDefinition = {
@@ -123,6 +150,11 @@ export class ContainerManager {
       }
     }
 
+    if (verbose) {
+      console.log(`Created SFTP definition for ${webDefinition.name}`);
+      console.log(r);
+    }
+
     return r;
   }
 
@@ -130,9 +162,13 @@ export class ContainerManager {
 
   constructor() { }
 
-  public getContainer(environment: IEnvironmentDefinition, name: string): Promise<IContainer> {
+  public getContainer(environment: IEnvironmentDefinition, name: string, verbose: boolean): Promise<IContainer> {
+    console.log(`Getting container ${name} from ${environment.fqdn}`);
+
     return DockerRunner.MakeRunner(environment)
       .then((runner) => {
+        runner.echoOutput = verbose;
+
         return runner
           .arg('container')
           .arg('inspect')
@@ -143,20 +179,38 @@ export class ContainerManager {
           .then(containers => {
             if(!containers || !containers.length) { return undefined; }
             return containers[0];
+          })
+          .then((c) => {
+            if (verbose) { 
+              console.log('Got container from docker:')
+              console.log(c);
+            }
+
+            return c;
           });
       });
   }
 
-  public containerExists(environment: IEnvironmentDefinition, name: string): Promise<boolean> {
-    return this.getContainer(environment, name)
-      .then((container) => container !== undefined);
+  public containerExists(environment: IEnvironmentDefinition, name: string, verbose: boolean): Promise<boolean> {
+    console.log(`Determining if container ${name} exists in ${environment.fqdn}`);
+
+    return this.getContainer(environment, name, verbose)
+      .then((container) => container !== undefined)
+      .then((exists) => {
+        console.log(`Container exists: ${exists}`);
+        return exists;
+      })
   }
 
-  public createTraefik(environment: IEnvironmentDefinition): Promise<IContainer[]> {
+  public createTraefik(environment: IEnvironmentDefinition, verbose: boolean): Promise<IContainer[]> {
+    console.log('Creating Traefik container');
 
-    return this.getContainer(environment, ContainerManager.TraefikProxyName)
+    return this.getContainer(environment, ContainerManager.TraefikProxyName, verbose)
       .then((container) => {
-        if (container) { return Promise.resolve(container); }
+        if (container) { 
+          console.log('Traefik container already exists; doing nothing')
+          return Promise.resolve(container); 
+        }
 
         return DockerRunner.MakeRunner(environment)
           .then((runner) => {
@@ -171,13 +225,21 @@ export class ContainerManager {
               .arg('traefik')
               .arg('--api --docker')
               .exec()
-              .then((id) => this.getContainer(environment, id));
+              .then((id) => this.getContainer(environment, id, verbose));
           })
+      })
+      .then((c) => {
+        console.log('Created Traefik container')
+        if (verbose) { 
+          console.log(c);  
+        }
+
+        return c;
       })
       .then((c) => [c]);
   }
   
-  public deleteContainer(environment: IEnvironmentDefinition, containerDefinition: string | IContainerDefinition[] | IContainerDefinition): Promise<void> {
+  public deleteContainer(environment: IEnvironmentDefinition, containerDefinition: string | IContainerDefinition[] | IContainerDefinition, verbose: boolean): Promise<void> {
     let definitionsPromise: Promise<IContainerDefinition[]> = undefined; 
 
     if (!containerDefinition) {
@@ -185,27 +247,37 @@ export class ContainerManager {
     }
 
     if (typeof(containerDefinition) === 'string') {
-      definitionsPromise = ContainerManager.getContainerDefinitions(containerDefinition);
+      console.log(`Deleting container ${containerDefinition}`)
+      definitionsPromise = ContainerManager.getContainerDefinitions(containerDefinition, verbose);
     }
     else if (Array.isArray(containerDefinition)) {
+      (containerDefinition as IContainerDefinition[]).forEach(c => { console.log(`Deleting container ${c.name}`)});
       definitionsPromise = Promise.resolve(containerDefinition as IContainerDefinition[])
     }
     else {
+      console.log(`Deleting container ${(containerDefinition as IContainerDefinition).name}`);
       definitionsPromise = Promise.resolve([containerDefinition as IContainerDefinition]);
     }
 
     var deleteSingularContainer = (def: IContainerDefinition) => {
-      return this.getContainer(environment, def.name)
+      return this.getContainer(environment, def.name, verbose)
         .then((container) => {
-          if (!container) { return Promise.resolve(); }
+          if (!container) { 
+            console.log(`Container does not exist; doing nothing`)
+            return Promise.resolve(); 
+          }
 
           return DockerRunner.MakeRunner(environment)
           .then((runner) => {
+            runner.echoOutput = verbose;
+
             return runner
             .arg('rm --force')
             .arg(`${container.Id}`)
             .exec()
-            .then(() => {});
+            .then(() => {
+              console.log(`Container ${container.Name} deleted`);
+            });
           });
         })
     }
@@ -222,51 +294,58 @@ export class ContainerManager {
       });
   }
 
-  public createGeneric(environment: IEnvironmentDefinition, containerName: string): Promise<IContainer[]> {
-    let defs: IContainerDefinition[] = []; 
-    let runner_: DockerRunner = undefined; 
+  public createContainerFromDefinition_noSFTP(environment: IEnvironmentDefinition, def: IContainerDefinition, verbose: boolean): Promise<IContainer> {
+    console.log(`Creating ${def.name} container from a definition (not automatically expanding SFTP for this container)`);
 
-    let createSingular = (def: IContainerDefinition) => {
-      return DockerRunner.MakeRunner(environment)
-        // Add basics to command line
-        .then((runner) => {
-          return runner
-            .arg('run')
-            .arg('-d')
-            .arg('--restart always')
-            .arg(`--name ${def.name}`)
-        })
+    return DockerRunner.MakeRunner(environment)
+      // Add basics to command line
+      .then((runner) => {
+        runner.echoOutput = verbose;
+        return runner
+          .arg('run')
+          .arg('-d')
+          .arg('--restart always')
+          .arg(`--name ${def.name}`)
+      })
 
-        .then((runner) => this.runner_addLabels(runner, environment, def))
-        .then((runner) => this.runner_addVolumes(runner, def))
-        .then((runner) => this.runner_addPorts(runner, def))
-        .then((runner) => this.runner_addEnvironmentVariables(runner, def))
+      .then((runner) => this.runner_addLabels(runner, environment, def, verbose))
+      .then((runner) => this.runner_addVolumes(runner, def, verbose))
+      .then((runner) => this.runner_addPorts(runner, def, verbose))
+      .then((runner) => this.runner_addEnvironmentVariables(runner, def, verbose))
 
-        // Add image at end of command line
-        .then((runner) => { 
-          return runner.arg(def.image)
-        })
+      // Add image at end of command line
+      .then((runner) => { 
+        return runner.arg(def.image)
+      })
 
-        .then((runner) => { runner.outputCommand(); return runner; })
-        .then((runner) => runner.exec())
-        .then((id) => this.getContainer(environment, id))
-    }
+      .then((runner) => { runner.outputCommand(); return runner; })
+      .then((runner) => runner.exec())
+      .then((id) => this.getContainer(environment, id, verbose))
+      .then((c) => {
+        console.log(`Created ${c.Name} (${c.Id})`);
 
-    return ContainerManager.getContainerDefinitions(containerName)
-      .then((d) => { defs = d; })
-      .then(() => {
+        return c;
+      })
+  }
+
+  public createGeneric(environment: IEnvironmentDefinition, containerName: string, verbose: boolean): Promise<IContainer[]> {
+    console.log(`Creating generic container ${containerName}`);
+
+    return ContainerManager.getContainerDefinitions(containerName, verbose)
+      .then((defs) => {
         let results: IContainer[] = [];
 
         let lastPromise: Promise<any> = Promise.resolve();
         defs.forEach(d => {
-          lastPromise = lastPromise.then(() => createSingular(d)).then((c) => results.push(c));
+          console.log(`Creating container ${d.name}`);
+          lastPromise = lastPromise.then(() => this.createContainerFromDefinition_noSFTP(environment, d, verbose)).then((c) => results.push(c));
         })
 
         return lastPromise.then(() => results);
       })
   }
 
-  private runner_addLabels(runner: DockerRunner, environment: IEnvironmentDefinition, def: IContainerDefinition): Promise<DockerRunner> {
+  private runner_addLabels(runner: DockerRunner, environment: IEnvironmentDefinition, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
     if (def.hostRoute) {
       let hostRule = def.hostRoute;
       if (environment.urlMap.hasOwnProperty(hostRule)) {
@@ -279,51 +358,74 @@ export class ContainerManager {
         rule = `${rule}; PathPrefixStrip: ${def.pathRoute}`;
       }
 
+      if (verbose) { console.log( `Adding "traefik.frontend.rule=${rule}" label`); }
       runner.arg(`--label "traefik.frontend.rule=${rule}"`);
     }
 
     return Promise.resolve(runner);
   }
 
-  private runner_addVolumes(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
+  private runner_addVolumes(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
     def.volumes = def.volumes || [];
 
     let lastPromise: Promise<any> = Promise.resolve();
     def.volumes.forEach((v) => {
-      lastPromise = lastPromise.then(() => this.runner_addVolume(runner, v));
+      lastPromise = lastPromise.then(() => this.runner_addVolume(runner, v, verbose));
     });
 
     return lastPromise.then(() => runner);
   }
 
-  private runner_addVolume(runner: DockerRunner, volumeEntry: IContainerDefinitionVolume): Promise<void> {
+  private runner_addVolume(runner: DockerRunner, volumeEntry: IContainerDefinitionVolume, verbose: boolean): Promise<void> {
     let mgr = new VolumeManager(runner.environment);
 
-    return mgr.getOrCreateVolumeForType(volumeEntry.type)
+    return mgr.getOrCreateVolumeForType(volumeEntry.type, verbose)
       .then((vol) => {
+        if (verbose) { console.log(`Adding ${vol.Name}:${volumeEntry.mountPoint} volume`); }
         runner.arg(`--volume ${vol.Name}:${volumeEntry.mountPoint}`)
       })
   }
 
-  private runner_addPorts(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
+  private runner_addPorts(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
     def.ports = def.ports || [];
 
     def.ports.forEach((p) => { 
+      if (verbose) { console.log(`Adding ${p.hostPort}:${p.containerPort} port`); }
       runner.arg(`--publish ${p.hostPort}:${p.containerPort}`)
     });
 
     return Promise.resolve(runner);
   }
 
-  private runner_addEnvironmentVariables(runner: DockerRunner, def: IContainerDefinition): Promise<DockerRunner> {
+  private runner_addEnvironmentVariables(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
+    let envarValue: ((e: envarT) => Promise<string>) = (e: envarT) => {
+      if (typeof(e) === 'string') { return Promise.resolve(e as string); }
+
+      let secretPath = path.join(runner.environment.secretPath, 'environment_secrets.json');
+      if (verbose) { console.log(`Reading secret environment variable ${e.secretName} from ${secretPath}`); }
+      return common.readFileAsync(secretPath)
+        .then((f) => JSON.parse(f) as {[k: string]: string})
+        .then((s) => {
+          if (!s.hasOwnProperty(e.secretName)) { return Promise.reject(`Could not find ${e.secretName} in ${secretPath}`); }
+          return s[e.secretName];
+        });
+    }
+
+    let lastPromise: Promise<any> = Promise.resolve();
+
     def.env = def.env || {};
     for(let k in def.env) {
       if (def.env.hasOwnProperty(k)) {
-        runner.arg(`--env "${k.toUpperCase()}=${def.env[k]}"`);
+        lastPromise = lastPromise
+          .then(() => envarValue(def.env[k]))
+          .then((envar) => {
+            if(verbose) { console.log(`Setting environment variable for ${k.toUpperCase()}`); }
+            runner.arg(`--env "${k.toUpperCase()}=${envar}"`);
+          });
       }
     }
 
-    return Promise.resolve(runner);
+    return lastPromise.then(() => runner);
   }
 
 }

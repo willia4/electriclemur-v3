@@ -122,7 +122,7 @@ export class VolumeManager {
       });
   }
 
-  public getOrCreateVolumeForType(volumeType: string): Promise<IVolume> {
+  public getOrCreateVolumeForType(volumeType: string, verbose: boolean): Promise<IVolume> {
     const label = `volumeRole=${volumeType}`;
 
     return this.getVolumes(label)

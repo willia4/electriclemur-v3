@@ -19,6 +19,10 @@ function processArgs() {
           required: true,
           describe: 'container to create in the environment'
         })
+        .option('verbose', {
+          type: 'boolean',
+          default: false
+        })
     }, handleCreateSingleContainer)
 
     .command('create-all <environmentName>', 'create all containers in an environment', (yargs) => {
@@ -27,6 +31,10 @@ function processArgs() {
           type: 'string',
           required: true,
           describe: 'environment to create the containers in'
+        })
+        .option('verbose', {
+          type: 'boolean',
+          default: false
         })
     }, handleCreateAllContainers)
 
@@ -42,36 +50,36 @@ function processArgs() {
     .argv;
 }
 
-function deleteAndCreateContainer(environment: IEnvironmentDefinition, containerName: string): Promise<IContainer[]> {
+function deleteAndCreateContainer(environment: IEnvironmentDefinition, containerName: string, verbose: boolean): Promise<IContainer[]> {
   let containerManager = new ContainerManager();
-  return containerManager.deleteContainer(environment, containerName)
+  return containerManager.deleteContainer(environment, containerName, verbose)
     .then(() => {
       if (containerName === ContainerManager.TraefikProxyName) {
-        return containerManager.createTraefik(environment);
+        return containerManager.createTraefik(environment, verbose);
       }
       else {
-        return containerManager.createGeneric(environment, containerName);
+        return containerManager.createGeneric(environment, containerName, verbose);
       }
     });
 }
 
-function handleCreateSingleContainer(args: {environmentName: string, containerName: string}): Promise<any> {
+function handleCreateSingleContainer(args: {environmentName: string, containerName: string, verbose: boolean}): Promise<any> {
 
   return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
-    .then((environment) => deleteAndCreateContainer(environment, args.containerName))
+    .then((environment) => deleteAndCreateContainer(environment, args.containerName, args.verbose))
     .then((container) => console.log(container));
 }
 
-function handleCreateAllContainers(args: {environmentName: string}): Promise<any> {
+function handleCreateAllContainers(args: {environmentName: string, verbose: boolean}): Promise<any> {
   return EnvironmentManager.getEnvironmentDefinition(args.environmentName)
     .then((environment) => {
       let containerManager = new ContainerManager();
 
-      return ContainerManager.getAvailableContainerDefinitions()
+      return ContainerManager.getAvailableContainerDefinitions(args.verbose)
         .then((availableContainers) => {
           let lastPromise: Promise<any> = Promise.resolve();
           availableContainers.forEach(c => {
-            lastPromise = lastPromise.then(() => deleteAndCreateContainer(environment, c)).then((c) => console.log(c))
+            lastPromise = lastPromise.then(() => deleteAndCreateContainer(environment, c, args.verbose)).then((c) => console.log(c))
           });
           
           return lastPromise;
