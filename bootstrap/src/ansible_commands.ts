@@ -20,13 +20,22 @@ export function createDirectory(environment: IEnvironmentDefinition, path: strin
       else {
         console.log(`Directory ${path} does not exist and will be created`);
         
-        let createCommand = new FileCommand(path, 'directory')
+        let createCommand = new FileCommand(path, 'directory', undefined)
         return AnsibleRunner.RunCommand<FileCommand, IFileResult>(environment, createCommand, verbose)
           .then((result) => {
             console.log(`Created directory ${result.path}`);
           });
       }
     })
+}
+
+export function setFileMode(environment: IEnvironmentDefinition, path: string, mode: string, verbose: boolean = false): Promise<void> {
+  console.log(`Setting mode of ${path} to ${mode}`);
+
+  let cmd = new FileCommand(path, undefined, mode);
+  return AnsibleRunner.RunCommand<FileCommand, IFileResult>(environment, cmd, verbose)
+    .then((result) => { })
+
 }
 
 export function uploadFile(environment: IEnvironmentDefinition, src: string, dest: string, verbose: boolean = false): Promise<ICopyResult> {
@@ -80,6 +89,18 @@ export function runCommand(environment: IEnvironmentDefinition, command: string,
     });
 }
 
+export function listFiles(environment: IEnvironmentDefinition, remotePath: string, verbose: boolean = false): Promise<string[]> {
+  console.log(`Listing files in ${remotePath}`);
+  let cmd = new FindCommand(remotePath);
+  return AnsibleRunner.RunCommand<FindCommand, IFindResult>(environment, cmd, verbose)
+    .then((result) => {
+      console.log(`Found ${result.examined} files`);
+      let r = result.files.map(f => f.path);
+      if (verbose) { console.log(r); }
+      return r;
+    })
+}
+
 export interface IStatResult extends IAnsibleResult {
   stat: {
     exists: boolean;
@@ -100,7 +121,7 @@ export class StatCommand implements IAnsibleCommand<IStatResult> {
   }
 }
 
-export type FileCommandStateT = 'directory';
+export type FileCommandStateT = 'directory' | undefined;
 
 export interface IFileResult extends IAnsibleResult {
   path: string;
@@ -112,10 +133,22 @@ export class FileCommand implements IAnsibleCommand<IFileResult> {
   public skipVolumes: boolean = true; 
 
   public get args(): string {
-    return `path=${this._path} state=${this._state}`;
+    let r = `path=${this._path}`;
+    if (this._state) {
+      r = `${r} state=${this._state}`;
+    }
+  
+    if (this._mode) {
+      r = `${r} mode=${this._mode}`;
+    }
+
+    return r;
   }
 
-  constructor(private _path: string, private _state: FileCommandStateT) {
+  constructor(
+    private _path: string, 
+    private _state: FileCommandStateT, 
+    private _mode: string) {
 
   }
 }
@@ -201,3 +234,22 @@ export class CommandCommand implements IAnsibleCommand<IAnsibleResult> {
 
   }
 }
+
+export interface IFindResult extends IAnsibleResult {
+  examined: number;
+  files: {
+    path: string;
+    mode: string;
+  }[]
+}
+
+export class FindCommand implements IAnsibleCommand<IFindResult> {
+  public module: string = 'find'
+  public skipVolumes: boolean = true;
+  public get args(): string {
+    return `paths=${this._path}`;
+  }
+
+  constructor(private _path: string) { }
+}
+

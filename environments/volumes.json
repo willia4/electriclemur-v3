@@ -1,12 +1,80 @@
 [
-    { "name": "database" },
-    { "name": "database_backup" },
-    { "name": "ssh_key" },
-    { "name": "ssh_user" },
-    { "name": "branheatherby_com"},
-    { "name": "mydwynter_com"},
-    { "name": "mydwynterstudios_com"},
-    { "name": "mydwyntertea_com"},
-    { "name": "crowglassdesign_com"},
-    { "name": "dalhraidia_com" }
+    {  "name": "database" },
+    
+    { 
+        "name": "database_backup",
+        "source": {
+            "type": "s3",
+            "s3Id": "com.electriclemur.databases/db1"
+        } 
+    },
+
+
+    { "name": "branheatherby_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/branheatherby.com"
+      }
+    },
+
+    { "name": "mydwynter_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/mydwynter.com"
+      }
+    },
+
+    { "name": "mydwynterstudios_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/mydwynterstudios.com"
+      }
+    },
+
+    { "name": "mydwyntertea_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/mydwyntertea.com"
+      }
+    },
+
+    { "name": "crowglassdesign_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/crowglassdesign.com"
+      }
+    },
+
+    { "name": "dalhraidia_com", 
+      "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/dalhraidia.com"
+      }
+    },
+        
+    { 
+        "name": "ssh_key",
+        "source": {
+            "type": "local-secret",
+            "files": [
+                "ssh_volumes/keys/ssh_host_dsa_key",
+                "ssh_volumes/keys/ssh_host_ecdsa_key",
+                "ssh_volumes/keys/ssh_host_ed25519_key",
+                "ssh_volumes/keys/ssh_host_rsa_key",
+                "ssh_volumes/keys/ssh_host_dsa_key.pub",
+                "ssh_volumes/keys/ssh_host_ecdsa_key.pub",
+                "ssh_volumes/keys/ssh_host_ed25519_key.pub",
+                "ssh_volumes/keys/ssh_host_rsa_key.pub"
+            ]
+        }
+    },
+    { 
+        "name": "ssh_user",
+        "source": {
+            "type": "local-secret",
+            "files": [
+                "ssh_volumes/user/authorized_keys"
+            ]
+        }
+    }
 ]

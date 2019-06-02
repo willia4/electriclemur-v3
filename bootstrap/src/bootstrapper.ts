@@ -11,6 +11,7 @@ import { EnvironmentManager, IEnvironmentDefinition } from './manager.environmen
 import * as ansible from './ansible_commands';
 import { AnsibleRunner } from './ansible_runner';
 import { ScriptRunner } from './script_runner';
+import { VolumeManager } from './volume_manager';
 
 const yaml = require('yaml');
 
@@ -192,6 +193,38 @@ function createDNS(dropletManager: DropletManager, dnsManager: DNSManager, envir
   return lastPromise.then(() => droplet);
 }
 
+function uploadVolumeDefaults(environment: IEnvironmentDefinition, verbose: boolean = false): Promise<void> {
+  let volumeManager = new VolumeManager(environment)
+  return volumeManager.getVolumeDefinitions()
+    .then(volumeDefs => {
+      let lastPromise: Promise<any> = Promise.resolve();
+      volumeDefs.forEach(v => { 
+        lastPromise = lastPromise.then(() => volumeManager.uploadDefaultSourceForVolumeDefinition(v, verbose));
+      });
+
+      return lastPromise.then(() => {});
+    })
+}
+
+function protectSSHKeys(environment: IEnvironmentDefinition, verbose: boolean): Promise<void> {
+  let volumeManager = new VolumeManager(environment);
+  return volumeManager.getOrCreateVolumeForType('ssh_key')
+    .then((vol) => {
+      if (!vol) { return Promise.resolve(); }
+      return ansible.listFiles(environment, vol.Mountpoint, verbose)
+        .then((files) => {
+          let lastPromise: Promise<any> = Promise.resolve();
+
+          files.forEach(f => {
+            lastPromise = lastPromise
+              .then(() => ansible.setFileMode(environment, f, "0600", verbose));
+          });
+
+          return lastPromise.then(() => {});
+        })
+    })
+}
+
 function handleCreate(args: ICreateArgs): Promise<any> {
   let definition: IEnvironmentDefinition = undefined;
 
@@ -219,7 +252,10 @@ function handleCreate(args: ICreateArgs): Promise<any> {
           })
           .then(() => {
             console.log('Uploading volume data')
-            if (!args.skipVolumes) { return AnsibleRunner.RunPlaybook(definition, "upload-files", args.verbose); }
+            if (!args.skipVolumes) { 
+              return uploadVolumeDefaults(definition, args.verbose)
+                .then(() => protectSSHKeys(definition, args.verbose)) 
+            }
             return Promise.resolve();
           });
       }

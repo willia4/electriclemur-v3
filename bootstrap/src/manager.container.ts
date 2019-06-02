@@ -299,7 +299,7 @@ export class ContainerManager {
   private runner_addVolume(runner: DockerRunner, volumeEntry: IContainerDefinitionVolume): Promise<void> {
     let mgr = new VolumeManager(runner.environment);
 
-    return mgr.getOrCreateVolume(volumeEntry.type)
+    return mgr.getOrCreateVolumeForType(volumeEntry.type)
       .then((vol) => {
         runner.arg(`--volume ${vol.Name}:${volumeEntry.mountPoint}`)
       })
