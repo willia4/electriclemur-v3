@@ -8,11 +8,13 @@ import * as path from 'path';
 
 import * as inquirer from 'inquirer';
 import { EnvironmentManager, IEnvironmentDefinition } from './manager.environment';
+import * as common from './common';
 import * as ansible from './ansible_commands';
 import { AnsibleRunner } from './ansible_runner';
 import { ScriptRunner } from './script_runner';
 import { VolumeManager } from './volume_manager';
 import { IContainerDefinition, ContainerManager } from './manager.container';
+import { DatabaseManager } from './manager.database';
 
 const yaml = require('yaml');
 
@@ -217,7 +219,7 @@ function protectSSHKeys(environment: IEnvironmentDefinition, verbose: boolean): 
   return volumeManager.getOrCreateVolumeForType('ssh_key', verbose)
     .then((vol) => {
       if (!vol) { return Promise.resolve(); }
-      return ansible.listFiles(environment, vol.Mountpoint, verbose)
+      return ansible.listFiles(environment, vol.Mountpoint, "*", false, verbose)
         .then((files) => {
           let lastPromise: Promise<any> = Promise.resolve();
 
@@ -229,34 +231,6 @@ function protectSSHKeys(environment: IEnvironmentDefinition, verbose: boolean): 
           return lastPromise.then(() => {});
         })
     })
-}
-
-function createDatabaseContainer(environment: IEnvironmentDefinition, verbose: boolean): Promise<void> {
-  let containerDef: IContainerDefinition = {
-    name: 'database',
-    image: 'mariadb:10.4.5',
-    volumes: [
-      {
-        mountPoint: "/var/lib/mysql",
-        type: "database"
-      }
-    ],
-    env: {
-      'MYSQL_ROOT_PASSWORD': { secretName: 'database_root_password'}
-    }
-  }
-
-  console.log('Creating database container')
-  let containerManager = new ContainerManager();
-  return containerManager.containerExists(environment, containerDef.name, verbose)
-    .then((exists) => {
-      if (exists) { 
-        console.log('Database container already exists')
-        return Promise.resolve(); 
-      }
-      return containerManager.createContainerFromDefinition_noSFTP(environment, containerDef, verbose)
-        .then(() => { console.log('Created database container')});
-    });
 }
 
 function handleCreate(args: ICreateArgs): Promise<any> {
@@ -294,7 +268,14 @@ function handleCreate(args: ICreateArgs): Promise<any> {
           })
           .then(() => {
             if (!args.skipDatabase) {
-              return createDatabaseContainer(definition, args.verbose);
+              let databaseManager = new DatabaseManager(definition, args.verbose);
+              return databaseManager.getOrCreateDatabaseContainer()
+                .then(() => {
+                  console.log("Waiting for database containers to finish deploying");
+                  return common.delay(1200);
+                })
+                .then(() => databaseManager.restoreDatabases())
+                .then(() => {});
             }
             return Promise.resolve();
           });

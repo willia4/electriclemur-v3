@@ -89,12 +89,12 @@ export function runCommand(environment: IEnvironmentDefinition, command: string,
     });
 }
 
-export function listFiles(environment: IEnvironmentDefinition, remotePath: string, verbose: boolean = false): Promise<string[]> {
+export function listFiles(environment: IEnvironmentDefinition, remotePath: string, pattern: string = "*", recurse: boolean = false, verbose: boolean = false): Promise<string[]> {
   console.log(`Listing files in ${remotePath}`);
-  let cmd = new FindCommand(remotePath);
+  let cmd = new FindCommand(remotePath, pattern, 'file', recurse);
   return AnsibleRunner.RunCommand<FindCommand, IFindResult>(environment, cmd, verbose)
     .then((result) => {
-      console.log(`Found ${result.examined} files`);
+      console.log(`Found ${result.files.length} files`);
       let r = result.files.map(f => f.path);
       if (verbose) { console.log(r); }
       return r;
@@ -243,13 +243,26 @@ export interface IFindResult extends IAnsibleResult {
   }[]
 }
 
+export type FindFileTypeT = 'file' | 'directory' | 'any';
+
 export class FindCommand implements IAnsibleCommand<IFindResult> {
   public module: string = 'find'
   public skipVolumes: boolean = true;
+
   public get args(): string {
-    return `paths=${this._path}`;
+    let r = '';
+    r = `${r} paths=${this._path}`;
+    r = `${r} file_type=${this._fileType}`;
+    r = `${r} patterns=${this._pattern}`;
+    r = `${r} recurse=${this._recurse ? 'yes' : 'no' }`
+    
+    return r;
   }
 
-  constructor(private _path: string) { }
+  constructor(
+    private _path: string,
+    private _pattern: string = '*',
+    private _fileType: FindFileTypeT = 'file',
+    private _recurse: boolean = false) { }
 }
 

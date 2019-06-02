@@ -3,6 +3,7 @@ import { IEnvironmentDefinition } from "./manager.environment";
 import * as common from './common';
 import * as path from 'path';
 import { VolumeManager } from "./volume_manager";
+import { SecretManager } from "./manager.secrets";
 
 export interface IContainerDefinitionVolume {
   type: string;
@@ -398,17 +399,11 @@ export class ContainerManager {
   }
 
   private runner_addEnvironmentVariables(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
+    let secretManager = new SecretManager(runner.environment, verbose);
+
     let envarValue: ((e: envarT) => Promise<string>) = (e: envarT) => {
       if (typeof(e) === 'string') { return Promise.resolve(e as string); }
-
-      let secretPath = path.join(runner.environment.secretPath, 'environment_secrets.json');
-      if (verbose) { console.log(`Reading secret environment variable ${e.secretName} from ${secretPath}`); }
-      return common.readFileAsync(secretPath)
-        .then((f) => JSON.parse(f) as {[k: string]: string})
-        .then((s) => {
-          if (!s.hasOwnProperty(e.secretName)) { return Promise.reject(`Could not find ${e.secretName} in ${secretPath}`); }
-          return s[e.secretName];
-        });
+      return secretManager.readEnvironmentSecret(e.secretName);
     }
 
     let lastPromise: Promise<any> = Promise.resolve();
