@@ -1,7 +1,7 @@
 [
   {
     "name": "crowglass-design",
-    "image": "morbz/docker-web-redirect",
+    "image": "willia4/docker-web-redirect:0.0.1",
     "hostRoute": "crowglass",
 
     "env": {
