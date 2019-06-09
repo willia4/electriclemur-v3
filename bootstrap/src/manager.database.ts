@@ -125,6 +125,32 @@ export class DatabaseManager {
     
   }
   
+  public createDatabaseUsers(): Promise<any> {
+    let secretManager = new SecretManager(this._environment, this._verbose);
+
+    return secretManager.readDatabaseSecrets()
+      .then(secrets => {
+        let lastPromise: Promise<any> = Promise.resolve();
+
+        for(let databaseName in secrets) {
+          if (secrets.hasOwnProperty(databaseName)) {
+            let s = secrets[databaseName];
+            lastPromise = lastPromise.then(() => this.createDatabaseUser(databaseName, s.username, s.password));
+          }
+        }
+
+        return lastPromise;
+      })
+  }
+
+  public createDatabaseUser(database: string, username: string, password: string): Promise<any> {
+    return this.makeDatabaseRunner()
+      .then((runner) => {
+        runner.arg(`"grant all privileges on ${database}.* to '${username}'@'%' identified by '${password}'; flush privileges; "`)
+        return runner.exec();
+      })
+  }
+
   private makeDatabaseRunner(mountVolume: IVolume = undefined): Promise<DockerRunner> {
     let secretManager = new SecretManager(this._environment, this._verbose);
     return secretManager.readEnvironmentSecret('database_root_password')

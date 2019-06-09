@@ -275,6 +275,7 @@ function handleCreate(args: ICreateArgs): Promise<any> {
                   return common.delay(1200);
                 })
                 .then(() => databaseManager.restoreDatabases())
+                .then(() => databaseManager.createDatabaseUsers())
                 .then(() => {});
             }
             return Promise.resolve();

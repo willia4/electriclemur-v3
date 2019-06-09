@@ -15,11 +15,16 @@ export interface IContainerDefinitionPort {
   hostPort: number;
 }
 
+export interface IDatabaseSecret {
+  database: string,
+  secretType: "username" | "password"
+}
+
 export interface ISecretEnvar {
   secretName: string
 }
 
-export type envarT = string | ISecretEnvar;
+export type envarT = string | ISecretEnvar | IDatabaseSecret;
 
 export interface IContainerDefinition {
   name: string;
@@ -31,6 +36,7 @@ export interface IContainerDefinition {
   volumes?: IContainerDefinitionVolume[];
   ports?: IContainerDefinitionPort[];
   env?: { [key: string]: envarT };
+  links?: string[];
 
   sftp?: {
     hostPort: number;
@@ -312,8 +318,9 @@ export class ContainerManager {
       .then((runner) => this.runner_addLabels(runner, environment, def, verbose))
       .then((runner) => this.runner_addVolumes(runner, def, verbose))
       .then((runner) => this.runner_addPorts(runner, def, verbose))
+      .then((runner) => this.runner_addLinks(runner, def, verbose))
       .then((runner) => this.runner_addEnvironmentVariables(runner, def, verbose))
-
+      
       // Add image at end of command line
       .then((runner) => { 
         return runner.arg(def.image)
@@ -398,12 +405,34 @@ export class ContainerManager {
     return Promise.resolve(runner);
   }
 
+  private runner_addLinks(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
+    def.links = def.links || [];
+
+    def.links.forEach((l) => {
+      if (verbose) { console.log(`Adding container link to ${l}`); }
+      runner.arg(`--link ${l}`);
+    });
+
+    return Promise.resolve(runner);
+  }
+
   private runner_addEnvironmentVariables(runner: DockerRunner, def: IContainerDefinition, verbose: boolean): Promise<DockerRunner> {
     let secretManager = new SecretManager(runner.environment, verbose);
 
     let envarValue: ((e: envarT) => Promise<string>) = (e: envarT) => {
-      if (typeof(e) === 'string') { return Promise.resolve(e as string); }
-      return secretManager.readEnvironmentSecret(e.secretName);
+      if (typeof(e) === 'string') { 
+        return Promise.resolve(e as string); 
+      }
+      else if (e.hasOwnProperty('secretName')) {
+        return secretManager.readEnvironmentSecret((e as ISecretEnvar).secretName);
+      }
+      else if (e.hasOwnProperty('database')) {
+        return secretManager.readDatabaseSecret((e as IDatabaseSecret).database)
+          .then((s) => s[(e as IDatabaseSecret).secretType]);
+      }
+      else {
+        return Promise.reject(`Could not determine environment variable type for ${e}`);
+      }
     }
 
     let lastPromise: Promise<any> = Promise.resolve();

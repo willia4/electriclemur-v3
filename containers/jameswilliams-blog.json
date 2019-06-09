@@ -1,0 +1,27 @@
+{
+  "name": "jameswilliams-blog",
+  "image": "willia4/wordpress_extra:4.9.1.2",
+  "hostRoute": "jameswilliams-base",
+  "pathRoute": "/blog",
+  "links": [
+    "database"
+  ],
+
+  "env": {
+    "WORDPRESS_DB_HOST" : "database",
+    "WORDPRESS_DB_USER" :     { "database": "jameswilliams_me", "secretType": "username" },
+    "WORDPRESS_DB_PASSWORD" : { "database": "jameswilliams_me", "secretType": "password" },
+    "WORDPRESS_DB_NAME" : "jameswilliams_me",
+    "WORDPRESS_DB_ENCODING" : "latin1",
+    "WORDPRESS_TABLE_PREFIX" : "wp_ednmfm_",
+    "WORDPRESS_URL" : "http://jameswilliams.staging.electriclemur.com/blog",
+    "WORDPRESS_AUTH_KEY" :          { "secretName": "JAMESWILLIAMSME_WORDPRESS_AUTH_KEY" },
+    "WORDPRESS_SECURE_AUTH_KEY" :   { "secretName": "JAMESWILLIAMSME_WORDPRESS_SECURE_AUTH_KEY" },
+    "WORDPRESS_LOGGED_IN_KEY" :     { "secretName": "JAMESWILLIAMSME_WORDPRESS_LOGGED_IN_KEY" },
+    "WORDPRESS_NONCE_KEY" :         { "secretName": "JAMESWILLIAMSME_WORDPRESS_NONCE_KEY" },
+    "WORDPRESS_AUTH_SALT" :         { "secretName": "JAMESWILLIAMSME_WORDPRESS_AUTH_SALT" },
+    "WORDPRESS_SECURE_AUTH_SALT" :  { "secretName": "JAMESWILLIAMSME_WORDPRESS_SECURE_AUTH_SALT" },
+    "WORDPRESS_LOGGED_IN_SALT" :    { "secretName": "JAMESWILLIAMSME_WORDPRESS_LOGGED_IN_SALT" },
+    "WORDPRESS_NONCE_SALT" :        { "secretName": "JAMESWILLIAMSME_WORDPRESS_NONCE_SALT" }
+  }
+}
