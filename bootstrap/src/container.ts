@@ -75,9 +75,12 @@ function handleCreateAllContainers(args: {environmentName: string, verbose: bool
     .then((environment) => {
       let containerManager = new ContainerManager();
 
+      let lastPromise: Promise<any> = containerManager.deleteContainer(environment, ContainerManager.TraefikProxyName, args.verbose)
+        .then(() => containerManager.createTraefik(environment, args.verbose));
+
       return ContainerManager.getAvailableContainerDefinitions(args.verbose)
         .then((availableContainers) => {
-          let lastPromise: Promise<any> = Promise.resolve();
+
           availableContainers.forEach(c => {
             lastPromise = lastPromise.then(() => deleteAndCreateContainer(environment, c, args.verbose)).then((c) => console.log(c))
           });
