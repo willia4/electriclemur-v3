@@ -52,6 +52,13 @@
       }
     },
         
+    { "name": "jameswilliams_me", 
+       "source": {
+          "type": "s3",
+          "s3Id": "com.electriclemur.staticfiles/jameswilliams.me"
+       }
+    },
+
     { 
         "name": "ssh_key",
         "source": {

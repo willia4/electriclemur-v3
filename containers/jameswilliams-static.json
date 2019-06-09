@@ -1,0 +1,19 @@
+[
+  {
+    "name": "jameswilliams-static",
+    "image": "willia4/nginx_static_php:3.0.1",
+    "hostRoute": "jameswilliams-base",
+    
+    "volumes": [
+      {
+        "type": "jameswilliams_me",
+        "mountPoint": "/var/www"
+      }
+    ],
+
+    "sftp": {
+      "hostPort": 1500,
+      "volumeType": "jameswilliams_me"
+    }
+  }
+]
