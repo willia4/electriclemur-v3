@@ -1,0 +1,28 @@
+{
+  "environmentName": "production",
+  "dropletName": "production01",
+  "domainNames": [
+      "electriclemur.com",
+      "jameswilliams.me",
+      "wishlist.jameswilliams.me",
+      "crowglassdesign.com",
+      "crowglass.com",
+      "branheatherby.com",
+      "mydwynter.com",
+      "mydwynterstudios.com",
+      "mydwyntertea.com",
+      "dalhraidia.com"
+    ],
+  "urlMap": 
+    {
+      "jameswilliams-base": "jameswilliams.me",
+      "jameswilliams-wishlist": "wishlist.jameswilliams.me",
+      "crowglass-design": "crowglassdesign.com",
+      "crowglass": "crowglass.com",
+      "branheatherby": "branheatherby.com",
+      "mydwynter": "mydwynter.com",
+      "mydwynterstudios": "mydwynterstudios.com",
+      "mydwyntertea": "mydwyntertea.com",
+      "dalhraidia": "dalhraidia.com"
+    }
+}

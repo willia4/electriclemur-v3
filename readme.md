@@ -70,6 +70,8 @@ To easily connect to the docker engine for an environment run
 
     source <(./bootstrap/dist/container.js print-env staging)
 
+    source <(./bootstrap/dist/container.js print-env production)
+
 This will your current bash session with the environment variables needed to transparently run `docker` commands. 
 
 Validate with `docker info`.
