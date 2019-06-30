@@ -272,7 +272,7 @@ function handleCreate(args: ICreateArgs): Promise<any> {
               return databaseManager.getOrCreateDatabaseContainer()
                 .then(() => {
                   console.log("Waiting for database containers to finish deploying");
-                  return common.delay(1200);
+                  return common.delay(10000);
                 })
                 .then(() => databaseManager.restoreDatabases())
                 .then(() => databaseManager.createDatabaseUsers())
