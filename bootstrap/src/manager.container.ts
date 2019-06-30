@@ -221,16 +221,21 @@ export class ContainerManager {
 
         return DockerRunner.MakeRunner(environment)
           .then((runner) => {
+            runner.arg('run')
+            runner.arg('-d')
+            runner.arg('--restart always')
+
+            if (environment.environmentName !== 'production') {
+              runner.arg('-p 8080:8080')
+            }
+
+            runner.arg('-p 80:80')
+            runner.arg('-v /var/run/docker.sock:/var/run/docker.sock')
+            runner.arg(`--name ${ContainerManager.TraefikProxyName}`)
+            runner.arg('traefik')
+            runner.arg('--api --docker');
+            
             return runner
-              .arg('run')
-              .arg('-d')
-              .arg('--restart always')
-              .arg('-p 8080:8080')
-              .arg('-p 80:80')
-              .arg('-v /var/run/docker.sock:/var/run/docker.sock')
-              .arg(`--name ${ContainerManager.TraefikProxyName}`)
-              .arg('traefik')
-              .arg('--api --docker')
               .exec()
               .then((id) => this.getContainer(environment, id, verbose));
           })
