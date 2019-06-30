@@ -13,7 +13,7 @@ import * as ansible from './ansible_commands';
 import { AnsibleRunner } from './ansible_runner';
 import { ScriptRunner } from './script_runner';
 import { VolumeManager } from './volume_manager';
-import { IContainerDefinition, ContainerManager } from './manager.container';
+import { IContainerDefinition, ContainerManager, IContainer } from './manager.container';
 import { DatabaseManager } from './manager.database';
 
 const yaml = require('yaml');
@@ -32,6 +32,7 @@ interface ICreateArgs {
   skipInit: boolean;
   skipVolumes: boolean;
   skipDatabase: boolean;
+  skipContainers: boolean;
   verbose: boolean;
 }
 
@@ -66,6 +67,10 @@ function processArgs() {
           default: false
         })
         .option('skipDatabase', {
+          type: 'boolean',
+          default: false
+        })
+        .option('skipContainers', {
           type: 'boolean',
           default: false
         })
@@ -279,6 +284,12 @@ function handleCreate(args: ICreateArgs): Promise<any> {
                 .then(() => {});
             }
             return Promise.resolve();
+          })
+          .then(() => {
+            if (!args.skipContainers) {
+              return handleCreateAllContainers(definition, args.verbose);
+            }
+            return Promise.resolve();
           });
       }
 
@@ -376,6 +387,36 @@ function handleDnsUpdate(args: IUpdateDNSArgs): Promise<any> {
     .then(() => dropletManager.getDroplet(environmentDefinition.dropletName))
     .then((d) => { if (!d) { throw new Error(`Could not load droplet ${environmentDefinition.dropletName}`); } return d; })
     .then((d) => createDNS(dropletManager, dnsManager, environmentDefinition, d))
+}
+
+function deleteAndCreateContainer(environment: IEnvironmentDefinition, containerName: string, verbose: boolean): Promise<IContainer[]> {
+  let containerManager = new ContainerManager();
+  return containerManager.deleteContainer(environment, containerName, verbose)
+    .then(() => {
+      if (containerName === ContainerManager.TraefikProxyName) {
+        return containerManager.createTraefik(environment, verbose);
+      }
+      else {
+        return containerManager.createGeneric(environment, containerName, verbose);
+      }
+    });
+}
+
+function handleCreateAllContainers(environment: IEnvironmentDefinition, verbose: boolean): Promise<any> {
+    let containerManager = new ContainerManager();
+
+    let lastPromise: Promise<any> = containerManager.deleteContainer(environment, ContainerManager.TraefikProxyName, verbose)
+      .then(() => containerManager.createTraefik(environment, verbose));
+
+    return ContainerManager.getAvailableContainerDefinitions(verbose)
+      .then((availableContainers) => {
+
+        availableContainers.forEach(c => {
+          lastPromise = lastPromise.then(() => deleteAndCreateContainer(environment, c, verbose)).then((c) => console.log(c))
+        });
+        
+        return lastPromise;
+      });
 }
 
 processArgs();
