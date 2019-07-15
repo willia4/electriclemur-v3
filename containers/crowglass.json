@@ -1,6 +1,6 @@
 [
   {
-    "name": "crowglass-design",
+    "name": "crowglass",
     "image": "willia4/docker-web-redirect:0.0.1",
     "hostRoute": "crowglass",
 
