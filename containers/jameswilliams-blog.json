@@ -14,7 +14,7 @@
     "WORDPRESS_DB_NAME" : "jameswilliams_me",
     "WORDPRESS_DB_ENCODING" : "latin1",
     "WORDPRESS_TABLE_PREFIX" : "wp_ednmfm_",
-    "WORDPRESS_URL" : "http://jameswilliams.staging.electriclemur.com/blog",
+    "WORDPRESS_URL" :               { "secretName": "JAMESWILLIAMSME_WORDPRESS_URL"},
     "WORDPRESS_AUTH_KEY" :          { "secretName": "JAMESWILLIAMSME_WORDPRESS_AUTH_KEY" },
     "WORDPRESS_SECURE_AUTH_KEY" :   { "secretName": "JAMESWILLIAMSME_WORDPRESS_SECURE_AUTH_KEY" },
     "WORDPRESS_LOGGED_IN_KEY" :     { "secretName": "JAMESWILLIAMSME_WORDPRESS_LOGGED_IN_KEY" },
