@@ -365,7 +365,7 @@ export class ContainerManager {
         hostRule = environment.urlMap[hostRule];
       }
 
-      let rule = `Host: ${hostRule}`;
+      let rule = `Host: ${hostRule},www.${hostRule}`;
       
       if (def.pathRoute) {
         rule = `${rule}; PathPrefixStrip: ${def.pathRoute}`;
